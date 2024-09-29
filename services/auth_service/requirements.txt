@@ -8,3 +8,5 @@ pymongo==4.9.1
 redis==5.1.0
 sqlparse==0.5.1
 tzdata==2024.2
+django-cors-headers
+kafka-python
