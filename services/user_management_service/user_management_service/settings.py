@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'userprofile',
     'corsheader',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 REST_FRAMEWORK = {
