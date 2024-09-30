@@ -23,6 +23,7 @@ services:
       - POSTGRES_DB=user_management_db
       - POSTGRES_USER=user_management_user
       - POSTGRES_PASSWORD=user_management_pass
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     depends_on:
       - postgres
       - redis
