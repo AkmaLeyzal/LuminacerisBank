@@ -1,0 +1,37 @@
+name: Deploy Microservices
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Build and push Docker images
+      run: |
+        docker-compose -f docker-compose.prod.yml up -d
+      env:
+        AUTH_DB_PASSWORD: ${{ secrets.AUTH_DB_PASSWORD }}
+        USER_DB_PASSWORD: ${{ secrets.USER_DB_PASSWORD }}
+        ACCOUNT_DB_PASSWORD: ${{ secrets.ACCOUNT_DB_PASSWORD }}
+        TRANSACTION_DB_PASSWORD: ${{ secrets.TRANSACTION_DB_PASSWORD }}
+        PAYMENT_DB_PASSWORD: ${{ secrets.PAYMENT_DB_PASSWORD }}
+        CARD_DB_PASSWORD: ${{ secrets.CARD_DB_PASSWORD }}
+        LOAN_DB_PASSWORD: ${{ secrets.LOAN_DB_PASSWORD }}
+        AUDIT_DB_PASSWORD: ${{ secrets.AUDIT_DB_PASSWORD }}
+        MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}  # MongoDB Password dari GitHub Secrets
+        REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}      # Redis Password dari GitHub Secrets
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
