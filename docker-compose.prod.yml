@@ -25,8 +25,8 @@ services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_USER: postgres_user
-      POSTGRES_PASSWORD: ${ACCOUNT_DB_PASSWORD}  # Password dari secrets untuk Account DB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}  # Password dari secrets untuk Account DB
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

@@ -47,4 +47,5 @@ jobs:
     #     MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
     #     MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
     #     REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+    #     POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD}}
 
