@@ -1,14 +1,46 @@
-asgiref==3.8.1
-confluent-kafka==2.5.3
-Django==5.1.1
-django-cors-headers==4.4.0
-djangorestframework==3.15.2
-djangorestframework-simplejwt==5.3.1
-dnspython==2.6.1
-kafka-python==2.0.2
-psycopg2-binary==2.9.9
-PyJWT==2.9.0
-pymongo==4.9.1
-redis==5.1.0
-sqlparse==0.5.1
-tzdata==2024.2
+# Core Django framework untuk membangun web application
+Django==5.1.1  # Versi terbaru Django
+
+# Library untuk Django REST framework yang menyediakan tools untuk API development
+djangorestframework==3.15.2  # Untuk membangun API RESTful
+
+# Simple JWT untuk otentikasi token di Django
+djangorestframework-simplejwt==5.3.1  # JWT support untuk Django
+
+# Library untuk menangani CORS headers, memungkinkan cross-origin requests dari React frontend ke backend Django
+django-cors-headers==4.4.0  # Menangani Cross-Origin Resource Sharing
+
+# Mendukung penggunaan Redis sebagai message broker atau cache di Django
+redis==5.1.0  # Library Redis untuk integrasi Django
+
+# Library untuk mendukung integrasi dengan MongoDB di Django
+pymongo==4.9.1  # Driver utama untuk MongoDB
+djongo>=1.3.6  # Django ORM untuk MongoDB, gunakan ini jika ingin memakai Django ORM dengan MongoDB
+
+# Kafka Python client untuk berkomunikasi dengan Kafka message broker
+kafka-python==2.0.2  # Library Kafka untuk memanage pesan dan queue
+confluent-kafka==2.5.3  # Kafka client lainnya yang lebih efisien
+
+# Library PostgreSQL untuk Django, digunakan sebagai database utama untuk beberapa service
+psycopg2-binary==2.9.9  # PostgreSQL adapter untuk Django
+
+# Library untuk JSON Web Token (JWT) processing
+PyJWT==2.9.0  # Untuk membuat dan memverifikasi JWT token
+
+# SQL parsing library untuk Django, digunakan secara internal oleh Django untuk memanipulasi query
+sqlparse==0.5.1  # Library parsing SQL yang digunakan oleh Django
+
+# Library DNS yang diperlukan oleh beberapa service untuk query DNS
+dnspython==2.6.1  # Digunakan untuk operasi DNS
+
+# Support untuk Django's async features (ASGI)
+asgiref==3.8.1  # Library untuk ASGI (Asynchronous Server Gateway Interface)
+
+# Data time zone untuk pengelolaan waktu di aplikasi Django
+tzdata==2024.2  # Informasi zona waktu
+
+# Server WSGI untuk menjalankan Django di production environment
+gunicorn>=20.1  # Server HTTP untuk menjalankan aplikasi Django
+
+# Pilihan: Jika Anda menggunakan MongoEngine sebagai alternatif untuk Djongo
+# mongoengine>=0.24.2  # Alternatif untuk integrasi MongoDB jika ingin lebih fleksibel
