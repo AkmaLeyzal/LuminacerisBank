@@ -63,13 +63,15 @@ TEMPLATES = [
 # WSGI application
 WSGI_APPLICATION = 'auth_service.wsgi.application'
 
+AUTH_USER_MODEL = 'authentication.User'
+
 # Database configuration (PostgreSQL)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DATABASE_NAME', 'auth_db'),
         'USER': os.getenv('DATABASE_USER', 'auth_admin'),
-        'PASSWORD': os.getenv('AUTH_DB_PASSWORD'),
+        'PASSWORD': os.getenv('AUTH_DB_PASSWORD', 'admin_auth'),
         'HOST': os.getenv('DATABASE_HOST', 'localhost'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
