@@ -9,7 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE', 'default_secret_key')
 
 # Debug mode
-DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+# DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+DEBUG = 'True'
 
 # Allowed hosts
 ALLOWED_HOSTS = ['*']

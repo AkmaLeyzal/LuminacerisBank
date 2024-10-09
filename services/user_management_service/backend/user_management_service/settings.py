@@ -9,7 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY_USER_SERVICE', 'default_secret_key')
 
 # Debug mode
-DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+# DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+DEBUG = 'True'
 
 # Allowed hosts
 ALLOWED_HOSTS = ['*']
@@ -25,7 +26,7 @@ INSTALLED_APPS = [
     'corsheaders',  # For handling CORS
     'rest_framework',  # Django Rest Framework
     'rest_framework_simplejwt.token_blacklist',  # Simple JWT Token Blacklist
-    'user_profile',  # Main app for this service
+    'userprofile',  # Main app for this service
 ]
 
 # Middleware configuration including CORS
@@ -69,7 +70,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DATABASE_NAME', 'user_db'),
         'USER': os.getenv('DATABASE_USER', 'user_admin'),
-        'PASSWORD': os.getenv('USER_DB_PASSWORD'),
+        'PASSWORD': os.getenv('USER_DB_PASSWORD', 'admin_user'),
         'HOST': os.getenv('DATABASE_HOST', 'localhost'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
@@ -92,6 +93,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
+
+# AUTH_USER_MODEL = 'userprofile.User'
 
 # Simple JWT settings
 SIMPLE_JWT = {

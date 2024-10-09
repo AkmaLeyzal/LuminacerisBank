@@ -32,16 +32,6 @@ services:
     networks:
       - backend
 
-  mongodb:
-    image: mongo:4.4
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}  # MongoDB username dari secrets
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}  # MongoDB password dari secrets
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - backend
-
   redis:
     image: redis:6.2
     command: redis-server --requirepass ${REDIS_PASSWORD}  # Redis password dari secrets
@@ -55,7 +45,7 @@ services:
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=auth_db
-      - DATABASE_USER=auth_user
+      - DATABASE_USER=auth_admin
       - DATABASE_PASSWORD=${AUTH_DB_PASSWORD}  # Password untuk Auth Service dari secrets
       - SECRET_KEY=${SECRET_KEY_AUTH_SERVICE}  # Secret Key dari secrets
     depends_on:
@@ -69,8 +59,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - DATABASE_HOST=postgres
-      - DATABASE_NAME=user_management_db
-      - DATABASE_USER=user_mgmt_user
+      - DATABASE_NAME=user_db
+      - DATABASE_USER=user_admin
       - DATABASE_PASSWORD=${USER_DB_PASSWORD}  # Password untuk User Management dari secrets
       - SECRET_KEY=${SECRET_KEY_USER_SERVICE}  # Secret Key dari secrets
     depends_on:
@@ -85,7 +75,7 @@ services:
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=account_db
-      - DATABASE_USER=account_user
+      - DATABASE_USER=account_admin
       - DATABASE_PASSWORD=${ACCOUNT_DB_PASSWORD}  # Password untuk Account Service dari secrets
       - SECRET_KEY=${SECRET_KEY_ACCOUNT_SERVICE}  # Secret Key dari secrets
     depends_on:
@@ -100,7 +90,7 @@ services:
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=transaction_db
-      - DATABASE_USER=transaction_user
+      - DATABASE_USER=transaction_admin
       - DATABASE_PASSWORD=${TRANSACTION_DB_PASSWORD}  # Password untuk Transaction Service dari secrets
       - SECRET_KEY=${SECRET_KEY_TRANSACTION_SERVICE}  # Secret Key dari secrets
     depends_on:
@@ -115,7 +105,7 @@ services:
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=payment_db
-      - DATABASE_USER=payment_user
+      - DATABASE_USER=payment_admin
       - DATABASE_PASSWORD=${PAYMENT_DB_PASSWORD}  # Password untuk Payment Service dari secrets
       - SECRET_KEY=${SECRET_KEY_PAYMENT_SERVICE}  # Secret Key dari secrets
     depends_on:
@@ -129,8 +119,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - DATABASE_HOST=postgres
-      - DATABASE_NAME=card_management_db
-      - DATABASE_USER=card_user
+      - DATABASE_NAME=card_db
+      - DATABASE_USER=card_admin
       - DATABASE_PASSWORD=${CARD_DB_PASSWORD}  # Password untuk Card Management Service dari secrets
       - SECRET_KEY=${SECRET_KEY_CARD_SERVICE}  # Secret Key dari secrets
     depends_on:
@@ -145,7 +135,7 @@ services:
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=loan_db
-      - DATABASE_USER=loan_user
+      - DATABASE_USER=loan_admin
       - DATABASE_PASSWORD=${LOAN_DB_PASSWORD}  # Password untuk Loan Service dari secrets
       - SECRET_KEY=${SECRET_KEY_LOAN_SERVICE}  # Secret Key dari secrets
     depends_on:
