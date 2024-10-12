@@ -38,8 +38,8 @@ jobs:
 
       - name: Deploy with Docker Compose
         run: | 
-          docker-compose -f docker-compose.prod.yml down
-          docker-compose -f docker-compose.prod.yml up -d
+          docker-compose -f docker-compose.prod.yml down -v
+          docker-compose -f docker-compose.prod.yml up -d --build
         env:
           ACCOUNT_DB_PASSWORD: ${{ secrets.ACCOUNT_DB_PASSWORD }}
           AUDIT_DB_PASSWORD: ${{ secrets.AUDIT_DB_PASSWORD }}
