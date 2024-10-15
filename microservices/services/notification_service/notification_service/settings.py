@@ -79,9 +79,9 @@ WSGI_APPLICATION = 'notification_service.wsgi.application'
 
 MONGODB_SETTINGS = {
     'db': 'notification_db',
-    'username': os.getenv('MONGODB_USERNAME', 'akmaleyzal'),
-    'password': os.getenv('MONGODB_PASSWORD', 'zxcvbnmpoiuytrewq23'),
-    'host': f'mongodb+srv://{os.getenv('MONGODB_USERNAME', 'akmaleyzal')}:{os.getenv('MONGODB_PASSWORD', 'zxcvbnmpoiuytrewq23')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/',
+    'username': os.getenv('MONGODB_USERNAME'),
+    'password': os.getenv('MONGODB_PASSWORD'),
+    'host': f'mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/',
     'authentication_source': 'admin',  # Sesuaikan jika diperlukan
 }
 
@@ -139,6 +139,9 @@ USE_TZ = True
 
 # Static files configuration
 STATIC_URL = '/static/'
+
+# Tambahkan pengaturan STATIC_ROOT
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

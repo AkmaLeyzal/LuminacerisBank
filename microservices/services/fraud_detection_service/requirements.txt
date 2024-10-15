@@ -43,4 +43,3 @@ gunicorn>=20.1  # Server HTTP untuk menjalankan aplikasi Django
 
 # Pilihan: Jika Anda menggunakan MongoEngine sebagai alternatif untuk Djongo
 mongoengine>=0.24.2  # Alternatif untuk integrasi MongoDB jika ingin lebih fleksibel
-djangorestframework-mongoengine>=3.0.0
