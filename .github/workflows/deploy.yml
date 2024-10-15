@@ -1,68 +1,245 @@
-name: CI/CD Pipeline
+# .github/workflows/deploy.yml
+
+name: Deploy to Docker Hub and Run Docker Compose
 
 on:
   push:
     branches:
-      - main
+      - main  # Ubah ke nama branch utama Anda jika berbeda
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v1
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-#       - name: Install Docker
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get install -y docker.io
+      # Step 2: Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-#       - name: Install Docker Compose
-#         run: |
-#           sudo curl -L "https://github.com/docker/compose/releases/download/v2.10.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-#           sudo chmod +x /usr/local/bin/docker-compose
+      # Step 3: Build and push Docker images for Microservices
+      - name: Build and push Auth Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/auth_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/auth_service:latest
+          build-args: |
+            SECRET_KEY_AUTH_SERVICE=${{ secrets.SECRET_KEY_AUTH_SERVICE }}
+            AUTH_DB_PASSWORD=${{ secrets.AUTH_DB_PASSWORD }}
 
-#       - name: Set up Docker Buildx
-#         uses: docker/setup-buildx-action@v2
+      - name: Build and push User Management Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/user_management_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/user_management_service:latest
+          build-args: |
+            SECRET_KEY_USER_SERVICE=${{ secrets.SECRET_KEY_USER_SERVICE }}
+            USER_DB_PASSWORD=${{ secrets.USER_DB_PASSWORD }}
 
-#       - name: Log in to DockerHub
-#         uses: docker/login-action@v2
-#         with:
-#           username: ${{ secrets.DOCKER_USERNAME }}
-#           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and push Account Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/account_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/account_service:latest
+          build-args: |
+            SECRET_KEY_ACCOUNT_SERVICE=${{ secrets.SECRET_KEY_ACCOUNT_SERVICE }}
+            ACCOUNT_DB_PASSWORD=${{ secrets.ACCOUNT_DB_PASSWORD }}
 
-#       - name: Build and Push Docker Images
-#         run: |
-#           docker-compose -f docker-compose.prod.yml build
-#           docker-compose -f docker-compose.prod.yml push
+      - name: Build and push Transaction Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/transaction_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/transaction_service:latest
+          build-args: |
+            SECRET_KEY_TRANSACTION_SERVICE=${{ secrets.SECRET_KEY_TRANSACTION_SERVICE }}
+            TRANSACTION_DB_PASSWORD=${{ secrets.TRANSACTION_DB_PASSWORD }}
 
-#       - name: Deploy with Docker Compose
-#         run: | 
-#           docker-compose -f docker-compose.prod.yml down -v
-#           docker-compose -f docker-compose.prod.yml up -d --build
-#         env:
-#           ACCOUNT_DB_PASSWORD: ${{ secrets.ACCOUNT_DB_PASSWORD }}
-#           AUDIT_DB_PASSWORD: ${{ secrets.AUDIT_DB_PASSWORD }}
-#           AUTH_DB_PASSWORD: ${{ secrets.AUTH_DB_PASSWORD }}
-#           CARD_DB_PASSWORD: ${{ secrets.CARD_DB_PASSWORD }}
-#           LOAN_DB_PASSWORD: ${{ secrets.LOAN_DB_PASSWORD }}
-#           TRANSACTION_DB_PASSWORD: ${{ secrets.TRANSACTION_DB_PASSWORD }}
-#           USER_DB_PASSWORD: ${{ secrets.USER_DB_PASSWORD }}
-#           PAYMENT_DB_PASSWORD: ${{ secrets.PAYMENT_DB_PASSWORD }}
+      - name: Build and push Payment Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/payment_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/payment_service:latest
+          build-args: |
+            SECRET_KEY_PAYMENT_SERVICE=${{ secrets.SECRET_KEY_PAYMENT_SERVICE }}
+            PAYMENT_DB_PASSWORD=${{ secrets.PAYMENT_DB_PASSWORD }}
+
+      - name: Build and push Card Management Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/card_management_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/card_management_service:latest
+          build-args: |
+            SECRET_KEY_CARD_SERVICE=${{ secrets.SECRET_KEY_CARD_SERVICE }}
+            CARD_DB_PASSWORD=${{ secrets.CARD_DB_PASSWORD }}
+
+      - name: Build and push Loan Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/loan_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/loan_service:latest
+          build-args: |
+            SECRET_KEY_LOAN_SERVICE=${{ secrets.SECRET_KEY_LOAN_SERVICE }}
+            LOAN_DB_PASSWORD=${{ secrets.LOAN_DB_PASSWORD }}
+
+      - name: Build and push Notification Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/notification_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/notification_service:latest
+          build-args: |
+            SECRET_KEY=${{ secrets.SECRET_KEY_NOTIFICATION_SERVICE }}
+            MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
+
+      - name: Build and push Audit Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/audit_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/audit_service:latest
+          build-args: |
+            SECRET_KEY_AUDIT_SERVICE=${{ secrets.SECRET_KEY_AUDIT_SERVICE }}
+            MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
+
+      - name: Build and push Fraud Detection Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/fraud_detection_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/fraud_detection_service:latest
+          build-args: |
+            SECRET_KEY_FRAUD_SERVICE=${{ secrets.SECRET_KEY_FRAUD_SERVICE }}
+            MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
+
+      - name: Build and push Support Service
+        uses: docker/build-push-action@v4
+        with:
+          context: ./microservices/services/support_service
+          push: true
+          tags: akmaleyzal/luminaceris-bank/support_service:latest
+          build-args: |
+            SECRET_KEY_SUPPORT_SERVICE=${{ secrets.SECRET_KEY_SUPPORT_SERVICE }}
+            MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
+
+      # Step 4: Build and push Docker images for Microfrontends
+      - name: Build and push Login Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/login_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/login_page:latest
+
+      - name: Build and push Home Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/home_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/home_page:latest
+
+      - name: Build and push Card Management Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/cardManagement_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/cardManagement_page:latest
+
+      - name: Build and push Fraud Alert Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/fraudAlert_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/fraudAlert_page:latest
+
+      - name: Build and push History Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/history_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/history_page:latest
+
+      - name: Build and push Loan Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/loan_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/loan_page:latest
+
+      - name: Build and push Notification Center Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/notificationCenter_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/notificationCenter_page:latest
+
+      - name: Build and push Payment Service Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/paymentService_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/paymentService_page:latest
+
+      - name: Build and push Profile Setting Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/profileSetting_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/profileSetting_page:latest
+
+      - name: Build and push Support Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/support_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/support_page:latest
+
+      - name: Build and push Transfer Page
+        uses: docker/build-push-action@v4
+        with:
+          context: ./micro-frontend/frontend/transfer_page
+          push: true
+          tags: akmaleyzal/luminaceris-bank/transfer_page:latest
+
+      # Step 5: Deploy with Docker Compose
+      - name: Deploy with Docker Compose
+        run: | 
+          docker-compose -f docker-compose.yml down -v
+          docker-compose -f docker-compose.yml up -d --build
+        env:
+          ACCOUNT_DB_PASSWORD: ${{ secrets.ACCOUNT_DB_PASSWORD }}
+          AUDIT_DB_PASSWORD: ${{ secrets.AUDIT_DB_PASSWORD }}
+          AUTH_DB_PASSWORD: ${{ secrets.AUTH_DB_PASSWORD }}
+          CARD_DB_PASSWORD: ${{ secrets.CARD_DB_PASSWORD }}
+          LOAN_DB_PASSWORD: ${{ secrets.LOAN_DB_PASSWORD }}
+          TRANSACTION_DB_PASSWORD: ${{ secrets.TRANSACTION_DB_PASSWORD }}
+          USER_DB_PASSWORD: ${{ secrets.USER_DB_PASSWORD }}
+          PAYMENT_DB_PASSWORD: ${{ secrets.PAYMENT_DB_PASSWORD }}
           
-#           SECRET_KEY_ACCOUNT_SERVICE: ${{ secrets.SECRET_KEY_ACCOUNT_SERVICE }}
-#           SECRET_KEY_AUDIT_SERVICE: ${{ secrets.SECRET_KEY_AUDIT_SERVICE }}
-#           SECRET_KEY_AUTH_SERVICE: ${{ secrets.SECRET_KEY_AUTH_SERVICE }}
-#           SECRET_KEY_CARD_SERVICE: ${{ secrets.SECRET_KEY_CARD_SERVICE }}
-#           SECRET_KEY_FRAUD_SERVICE: ${{ secrets.SECRET_KEY_FRAUD_SERVICE }}
-#           SECRET_KEY_LOAN_SERVICE: ${{ secrets.SECRET_KEY_LOAN_SERVICE }}
-#           SECRET_KEY_NOTIFICATION_SERVICE: ${{ secrets.SECRET_KEY_NOTIFICATION_SERVICE }}
-#           SECRET_KEY_PAYMENT_SERVICE: ${{ secrets.SECRET_KEY_PAYMENT_SERVICE }}
-#           SECRET_KEY_SUPPORT_SERVICE: ${{ secrets.SECRET_KEY_SUPPORT_SERVICE }}
-#           SECRET_KEY_TRANSACTION_SERVICE: ${{ secrets.SECRET_KEY_TRANSACTION_SERVICE }}
-#           SECRET_KEY_USER_SERVICE: ${{ secrets.SECRET_KEY_USER_SERVICE }}
-
-#           MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
-#           MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
-#           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-#           POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
+          SECRET_KEY_ACCOUNT_SERVICE: ${{ secrets.SECRET_KEY_ACCOUNT_SERVICE }}
+          SECRET_KEY_AUDIT_SERVICE: ${{ secrets.SECRET_KEY_AUDIT_SERVICE }}
+          SECRET_KEY_AUTH_SERVICE: ${{ secrets.SECRET_KEY_AUTH_SERVICE }}
+          SECRET_KEY_CARD_SERVICE: ${{ secrets.SECRET_KEY_CARD_SERVICE }}
+          SECRET_KEY_FRAUD_SERVICE: ${{ secrets.SECRET_KEY_FRAUD_SERVICE }}
+          SECRET_KEY_LOAN_SERVICE: ${{ secrets.SECRET_KEY_LOAN_SERVICE }}
+          SECRET_KEY_NOTIFICATION_SERVICE: ${{ secrets.SECRET_KEY_NOTIFICATION_SERVICE }}
+          SECRET_KEY_PAYMENT_SERVICE: ${{ secrets.SECRET_KEY_PAYMENT_SERVICE }}
+          SECRET_KEY_SUPPORT_SERVICE: ${{ secrets.SECRET_KEY_SUPPORT_SERVICE }}
+          SECRET_KEY_TRANSACTION_SERVICE: ${{ secrets.SECRET_KEY_TRANSACTION_SERVICE }}
+          SECRET_KEY_USER_SERVICE: ${{ secrets.SECRET_KEY_USER_SERVICE }}
+    
+          MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+          MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}

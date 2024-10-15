@@ -9,8 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE', 'default_secret_key')
 
 # Debug mode
-# DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
-DEBUG = 'True'
+DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+# DEBUG = 'True'
 
 # Allowed hosts
 ALLOWED_HOSTS = ['*']
@@ -72,7 +72,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DATABASE_NAME', 'auth_db'),
         'USER': os.getenv('DATABASE_USER', 'auth_admin'),
-        'PASSWORD': os.getenv('AUTH_DB_PASSWORD', 'admin_auth'),
+        'PASSWORD': os.getenv('AUTH_DB_PASSWORD'),
         'HOST': os.getenv('DATABASE_HOST', 'localhost'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
@@ -140,12 +140,12 @@ LOGGING = {
     },
 }
 
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = 3600
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
+# if not DEBUG:
+#     SECURE_SSL_REDIRECT = True
+#     CSRF_COOKIE_SECURE = True
+#     SESSION_COOKIE_SECURE = True
+#     SECURE_HSTS_SECONDS = 3600
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+#     SECURE_HSTS_PRELOAD = True
+#     SECURE_BROWSER_XSS_FILTER = True
+#     SECURE_CONTENT_TYPE_NOSNIFF = True
