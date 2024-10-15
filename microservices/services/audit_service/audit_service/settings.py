@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import mongoengine
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,8 +26,8 @@ INSTALLED_APPS = [
     'corsheaders',  # For handling CORS
     'rest_framework',  # Django Rest Framework
     'rest_framework_simplejwt.token_blacklist',  # Simple JWT Token Blacklist
-    'djongo',  # Using MongoDB with Django
-    'audit',  # Main app for this service
+    # 'rest_framewrok_mongoengine',  # Using MongoDB with Django
+    # 'audit',  # Main app for this service
 ]
 
 # Middleware configuration including CORS
@@ -65,16 +66,33 @@ TEMPLATES = [
 WSGI_APPLICATION = 'audit_service.wsgi.application'
 
 # Database configuration (MongoDB)
-DATABASES = {
-    'default': {
-        'ENGINE': 'djongo',
-        'NAME': os.getenv('DATABASE_NAME', 'audit_db'),
-        'CLIENT': {
-            'host': f"mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/",
-            'authMechanism': 'SCRAM-SHA-1',
-        },
-    }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'djongo',
+#         'NAME': os.getenv('DATABASE_NAME', 'audit_db'),
+#         'CLIENT': {
+#             'host': f"mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/",
+#             'authMechanism': 'SCRAM-SHA-1',
+#         },
+#     }
+# }
+
+MONGODB_SETTINGS = {
+    'db': 'audit_db',
+    'username': os.getenv('MONGODB_USERNAME'),
+    'password': os.getenv('MONGODB_PASSWORD'),
+    'host': f'mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/',
+    'authentication_source': 'admin',  # Sesuaikan jika diperlukan
 }
+
+# DIUBAH: Inisialisasi koneksi MongoEngine
+mongoengine.connect(
+    db=MONGODB_SETTINGS['db'],
+    username=MONGODB_SETTINGS['username'],
+    password=MONGODB_SETTINGS['password'],
+    host=MONGODB_SETTINGS['host'],
+    authentication_source=MONGODB_SETTINGS.get('authentication_source', 'admin'),
+)
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

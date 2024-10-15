@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import mongoengine  # DIUBAH: Tambahkan ini untuk MongoEngine
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,10 +24,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',  # For handling CORS
-    'djongo',
     'rest_framework',  # Django Rest Framework
     'rest_framework_simplejwt.token_blacklist',  # Simple JWT Token Blacklist
-    'fraud',  # Main app for this service
+    # 'rest_framework_mongoengine',  # DIUBAH: Tambahkan ini untuk integrasi DRF dengan MongoEngine
+    # 'fraud',  # Main app for this service
 ]
 
 # Middleware configuration including CORS
@@ -64,18 +65,35 @@ TEMPLATES = [
 # WSGI application
 WSGI_APPLICATION = 'fraud_detection_service.wsgi.application'
 
-# Database configuration (MongoDB)
-DATABASES = {
-    'default': {
-        'ENGINE': 'djongo',
-        'NAME': os.getenv('DATABASE_NAME', 'fraud_db'),
-        'CLIENT': {
-            'host': f"mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/",
-            'authMechanism': 'SCRAM-SHA-1',
-        },
-    }
+# Menghapus konfigurasi DATABASES karena MongoEngine digunakan
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'djongo',
+#         'NAME': os.getenv('DATABASE_NAME', 'fraud_db'),
+#         'CLIENT': {
+#             'host': f"mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/",
+#             'authMechanism': 'SCRAM-SHA-1',
+#         },
+#     }
+# }
+
+# DIUBAH: Konfigurasi MongoEngine
+MONGODB_SETTINGS = {
+    'db': 'fraud_db',
+    'username': os.getenv('MONGODB_USERNAME'),
+    'password': os.getenv('MONGODB_PASSWORD'),
+    'host': f'mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/',
+    'authentication_source': 'admin',  # Sesuaikan jika diperlukan
 }
 
+# DIUBAH: Inisialisasi koneksi MongoEngine
+mongoengine.connect(
+    db=MONGODB_SETTINGS['db'],
+    username=MONGODB_SETTINGS['username'],
+    password=MONGODB_SETTINGS['password'],
+    host=MONGODB_SETTINGS['host'],
+    authentication_source=MONGODB_SETTINGS.get('authentication_source', 'admin'),
+)
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -126,6 +144,7 @@ STATIC_URL = '/static/'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

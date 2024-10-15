@@ -1,9 +1,16 @@
 # Stage 1: Build the application
-FROM python:3.9-slim AS build
+FROM python:3.10-slim AS build
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /LuminacerisBank/microservices/services/card_management_service
@@ -19,7 +26,7 @@ COPY . .
 RUN python manage.py collectstatic --noinput
 
 # Stage 2: Run the application
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1

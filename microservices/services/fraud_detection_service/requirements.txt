@@ -15,7 +15,6 @@ redis==5.1.0  # Library Redis untuk integrasi Django
 
 # Library untuk mendukung integrasi dengan MongoDB di Django
 pymongo==4.9.1  # Driver utama untuk MongoDB
-djongo>=1.3.6  # Django ORM untuk MongoDB, gunakan ini jika ingin memakai Django ORM dengan MongoDB
 
 # Kafka Python client untuk berkomunikasi dengan Kafka message broker
 kafka-python==2.0.2  # Library Kafka untuk memanage pesan dan queue
@@ -43,4 +42,5 @@ tzdata==2024.2  # Informasi zona waktu
 gunicorn>=20.1  # Server HTTP untuk menjalankan aplikasi Django
 
 # Pilihan: Jika Anda menggunakan MongoEngine sebagai alternatif untuk Djongo
-# mongoengine>=0.24.2  # Alternatif untuk integrasi MongoDB jika ingin lebih fleksibel
+mongoengine>=0.24.2  # Alternatif untuk integrasi MongoDB jika ingin lebih fleksibel
+djangorestframework-mongoengine>=3.0.0
