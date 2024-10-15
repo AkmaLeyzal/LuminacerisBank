@@ -27,7 +27,8 @@ jobs:
       - name: Build and push Auth Service
         uses: docker/build-push-action@v4
         with:
-          context: ./microservices/services/auth_service
+          context: ./microservices/services/
+          file: ./microservices/services/auth_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/auth_service:latest
           build-args: |
@@ -38,6 +39,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/user_management_service
+          file: ./microservices/services/user_management_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/user_management_service:latest
           build-args: |
@@ -48,6 +50,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/account_service
+          file: ./microservices/services/account_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/account_service:latest
           build-args: |
@@ -58,6 +61,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/transaction_service
+          file: ./microservices/services/transaction_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/transaction_service:latest
           build-args: |
@@ -68,6 +72,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/payment_service
+          file: ./microservices/services/payment_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/payment_service:latest
           build-args: |
@@ -78,6 +83,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/card_management_service
+          file: ./microservices/services/card_management_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/card_management_service:latest
           build-args: |
@@ -88,6 +94,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/loan_service
+          file: ./microservices/services/loan_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/loan_service:latest
           build-args: |
@@ -98,6 +105,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/notification_service
+          file: ./microservices/services/notification_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/notification_service:latest
           build-args: |
@@ -108,6 +116,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/audit_service
+          file: ./microservices/services/audit_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/audit_service:latest
           build-args: |
@@ -118,6 +127,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/fraud_detection_service
+          file: ./microservices/services/fraud_detection_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/fraud_detection_service:latest
           build-args: |
@@ -128,6 +138,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./microservices/services/support_service
+          file: ./microservices/services/support_service/Dockerfile
           push: true
           tags: akmaleyzal/luminaceris-bank/support_service:latest
           build-args: |
