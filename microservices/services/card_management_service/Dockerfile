@@ -1,29 +1,42 @@
-# Stage 1: Build Frontend React
-FROM node:14-alpine AS frontend
+# Stage 1: Build the application
+FROM python:3.9-slim AS build
 
-WORKDIR /usr/src/card_management_service/frontend
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm install
+# Set working directory
+WORKDIR /LuminacerisBank/microservices/services/card_management_service
 
-COPY frontend/ .
-RUN npm run build
-
-# Stage 2: Build Backend Django
-FROM python:3.9-slim AS backend
-
-WORKDIR /usr/src/card_management_service/backend
-
-COPY backend/requirements.txt .
+# Install dependencies
+COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY backend/ .
+# Copy the project
+COPY . .
 
-# Copy frontend build ke dalam backend static files
-COPY --from=frontend /usr/src/card_management_service/frontend/build /usr/src/card_management_service/backend/static
+# Collect static files
+RUN python manage.py collectstatic --noinput
 
-# Django menggunakan port 8000
+# Stage 2: Run the application
+FROM python:3.9-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Set working directory
+WORKDIR /LuminacerisBank/microservices/services/card_management_service
+
+# Install dependencies
+COPY --from=build /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=build /LuminacerisBank/microservices/services/card_management_service /LuminacerisBank/microservices/services/card_management_service
+
+# Install Gunicorn
+RUN pip install gunicorn
+
+# Expose port
 EXPOSE 8000
 
-# Jalankan server Django menggunakan Gunicorn
-CMD ["gunicorn", "--workers=3", "--bind=0.0.0.0:8000", "card_management_service.wsgi:application"]
+# Start Gunicorn
+CMD ["gunicorn", "card_management_service.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
