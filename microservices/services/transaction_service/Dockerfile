@@ -36,7 +36,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /LuminacerisBank/microservices/services/transaction_service
 
 # Install dependencies
-COPY --from=build /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=build /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY --from=build /LuminacerisBank/microservices/services/transaction_service /LuminacerisBank/microservices/services/transaction_service
 
 # Install Gunicorn
