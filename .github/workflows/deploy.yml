@@ -30,7 +30,7 @@ jobs:
           context: ./microservices/services/auth_service
           file: ./microservices/services/auth_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank:latest
+          tags: akmaleyzal/luminacerisbank-auth_services:latest
           build-args: |
             SECRET_KEY_AUTH_SERVICE=${{ secrets.SECRET_KEY_AUTH_SERVICE }}
             AUTH_DB_PASSWORD=${{ secrets.AUTH_DB_PASSWORD }}
@@ -41,7 +41,7 @@ jobs:
           context: ./microservices/services/user_management_service
           file: ./microservices/services/user_management_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/user_management_service:latest
+          tags: akmaleyzal/luminacerisbank-user_management_service:latest
           build-args: |
             SECRET_KEY_USER_SERVICE=${{ secrets.SECRET_KEY_USER_SERVICE }}
             USER_DB_PASSWORD=${{ secrets.USER_DB_PASSWORD }}
@@ -52,7 +52,7 @@ jobs:
           context: ./microservices/services/account_service
           file: ./microservices/services/account_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/account_service:latest
+          tags: akmaleyzal/luminacerisbank-account_service:latest
           build-args: |
             SECRET_KEY_ACCOUNT_SERVICE=${{ secrets.SECRET_KEY_ACCOUNT_SERVICE }}
             ACCOUNT_DB_PASSWORD=${{ secrets.ACCOUNT_DB_PASSWORD }}
@@ -63,7 +63,7 @@ jobs:
           context: ./microservices/services/transaction_service
           file: ./microservices/services/transaction_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/transaction_service:latest
+          tags: akmaleyzal/luminacerisbank-transaction_service:latest
           build-args: |
             SECRET_KEY_TRANSACTION_SERVICE=${{ secrets.SECRET_KEY_TRANSACTION_SERVICE }}
             TRANSACTION_DB_PASSWORD=${{ secrets.TRANSACTION_DB_PASSWORD }}
@@ -74,7 +74,7 @@ jobs:
           context: ./microservices/services/payment_service
           file: ./microservices/services/payment_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/payment_service:latest
+          tags: akmaleyzal/luminacerisbank-payment_service:latest
           build-args: |
             SECRET_KEY_PAYMENT_SERVICE=${{ secrets.SECRET_KEY_PAYMENT_SERVICE }}
             PAYMENT_DB_PASSWORD=${{ secrets.PAYMENT_DB_PASSWORD }}
@@ -85,7 +85,7 @@ jobs:
           context: ./microservices/services/card_management_service
           file: ./microservices/services/card_management_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/card_management_service:latest
+          tags: akmaleyzal/luminacerisbank-card_management_service:latest
           build-args: |
             SECRET_KEY_CARD_SERVICE=${{ secrets.SECRET_KEY_CARD_SERVICE }}
             CARD_DB_PASSWORD=${{ secrets.CARD_DB_PASSWORD }}
@@ -96,7 +96,7 @@ jobs:
           context: ./microservices/services/loan_service
           file: ./microservices/services/loan_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/loan_service:latest
+          tags: akmaleyzal/luminacerisbank-loan_service:latest
           build-args: |
             SECRET_KEY_LOAN_SERVICE=${{ secrets.SECRET_KEY_LOAN_SERVICE }}
             LOAN_DB_PASSWORD=${{ secrets.LOAN_DB_PASSWORD }}
@@ -107,7 +107,7 @@ jobs:
           context: ./microservices/services/notification_service
           file: ./microservices/services/notification_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/notification_service:latest
+          tags: akmaleyzal/luminacerisbank-notification_service:latest
           build-args: |
             SECRET_KEY=${{ secrets.SECRET_KEY_NOTIFICATION_SERVICE }}
             MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
@@ -118,7 +118,7 @@ jobs:
           context: ./microservices/services/audit_service
           file: ./microservices/services/audit_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/audit_service:latest
+          tags: akmaleyzal/luminacerisbank-audit_service:latest
           build-args: |
             SECRET_KEY_AUDIT_SERVICE=${{ secrets.SECRET_KEY_AUDIT_SERVICE }}
             MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
@@ -129,7 +129,7 @@ jobs:
           context: ./microservices/services/fraud_detection_service
           file: ./microservices/services/fraud_detection_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/fraud_detection_service:latest
+          tags: akmaleyzal/luminacerisbank-fraud_detection_service:latest
           build-args: |
             SECRET_KEY_FRAUD_SERVICE=${{ secrets.SECRET_KEY_FRAUD_SERVICE }}
             MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
@@ -140,7 +140,7 @@ jobs:
           context: ./microservices/services/support_service
           file: ./microservices/services/support_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminaceris-bank/support_service:latest
+          tags: akmaleyzal/luminacerisbank-support_service:latest
           build-args: |
             SECRET_KEY_SUPPORT_SERVICE=${{ secrets.SECRET_KEY_SUPPORT_SERVICE }}
             MONGODB_PASSWORD=${{ secrets.MONGODB_PASSWORD }}
@@ -149,79 +149,79 @@ jobs:
       - name: Build and push Login Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/login_page
+          context: ./micro-frontend/frontend/login_page/login
           push: true
-          tags: akmaleyzal/luminaceris-bank/login_page:latest
+          tags: akmaleyzal/luminacerisbank-login_page:latest
 
       - name: Build and push Home Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/home_page
+          context: ./micro-frontend/frontend/home_page/home
           push: true
-          tags: akmaleyzal/luminaceris-bank/home_page:latest
+          tags: akmaleyzal/luminacerisbank-home_page:latest
 
       - name: Build and push Card Management Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/cardManagement_page
+          context: ./micro-frontend/frontend/cardManagement_page/card
           push: true
-          tags: akmaleyzal/luminaceris-bank/cardManagement_page:latest
+          tags: akmaleyzal/luminacerisbank-cardManagement_page:latest
 
       - name: Build and push Fraud Alert Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/fraudAlert_page
+          context: ./micro-frontend/frontend/fraudAlert_page/fraud
           push: true
-          tags: akmaleyzal/luminaceris-bank/fraudAlert_page:latest
+          tags: akmaleyzal/luminacerisbank-fraudAlert_page:latest
 
       - name: Build and push History Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/history_page
+          context: ./micro-frontend/frontend/history_page/history
           push: true
-          tags: akmaleyzal/luminaceris-bank/history_page:latest
+          tags: akmaleyzal/luminacerisbank-history_page:latest
 
       - name: Build and push Loan Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/loan_page
+          context: ./micro-frontend/frontend/loan_page/loan
           push: true
-          tags: akmaleyzal/luminaceris-bank/loan_page:latest
+          tags: akmaleyzal/luminacerisbank-loan_page:latest
 
       - name: Build and push Notification Center Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/notificationCenter_page
+          context: ./micro-frontend/frontend/notificationCenter_page/notification
           push: true
-          tags: akmaleyzal/luminaceris-bank/notificationCenter_page:latest
+          tags: akmaleyzal/luminacerisbank-notificationCenter_page:latest
 
       - name: Build and push Payment Service Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/paymentService_page
+          context: ./micro-frontend/frontend/paymentService_page/payment
           push: true
-          tags: akmaleyzal/luminaceris-bank/paymentService_page:latest
+          tags: akmaleyzal/luminacerisbank-paymentService_page:latest
 
       - name: Build and push Profile Setting Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/profileSetting_page
+          context: ./micro-frontend/frontend/profileSetting_page/profile
           push: true
-          tags: akmaleyzal/luminaceris-bank/profileSetting_page:latest
+          tags: akmaleyzal/luminacerisbank-profileSetting_page:latest
 
       - name: Build and push Support Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/support_page
+          context: ./micro-frontend/frontend/support_page/support
           push: true
-          tags: akmaleyzal/luminaceris-bank/support_page:latest
+          tags: akmaleyzal/luminacerisbank-support_page:latest
 
       - name: Build and push Transfer Page
         uses: docker/build-push-action@v4
         with:
-          context: ./micro-frontend/frontend/transfer_page
+          context: ./micro-frontend/frontend/transfer_page/transfer
           push: true
-          tags: akmaleyzal/luminaceris-bank/transfer_page:latest
+          tags: akmaleyzal/luminacerisbank-transfer_page:latest
 
       # Step 5: Deploy with Docker Compose
       - name: Deploy with Docker Compose
