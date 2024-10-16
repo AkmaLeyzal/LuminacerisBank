@@ -123,7 +123,6 @@ services:
       - webnet
     depends_on:
       - postgres
-      - mongodb
       - kafka
 
   audit_service:
@@ -139,7 +138,6 @@ services:
       - webnet
     depends_on:
       - kafka
-      - mongodb
 
   fraud_detection_service:
     image: akmaleyzal/luminaceris-bank/fraud_detection_service:latest
@@ -154,7 +152,6 @@ services:
       - webnet
     depends_on:
       - kafka
-      - mongodb
 
   support_service:
     image: akmaleyzal/luminaceris-bank/support_service:latest
@@ -169,7 +166,6 @@ services:
       - webnet
     depends_on:
       - kafka
-      - mongodb
 
 
   # ============================
