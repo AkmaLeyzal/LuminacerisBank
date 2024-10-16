@@ -6,7 +6,7 @@ services:
   # ============================
 
   auth_service:
-    image: akmaleyzal/luminaceris-bank/auth_service:latest
+    image: akmaleyzal/luminacerisbank-auth_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=auth_db
@@ -21,7 +21,7 @@ services:
       - kafka
 
   user_management_service:
-    image: akmaleyzal/luminaceris-bank/user_management_service:latest
+    image: akmaleyzal/luminacerisbank-user_management_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=user_db
@@ -36,7 +36,7 @@ services:
       - kafka
 
   account_service:
-    image: akmaleyzal/luminaceris-bank/account_service:latest
+    image: akmaleyzal/luminacerisbank-account_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=account_db
@@ -51,7 +51,7 @@ services:
       - kafka
 
   transaction_service:
-    image: akmaleyzal/luminaceris-bank/transaction_service:latest
+    image: akmaleyzal/luminacerisbank-transaction_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=transaction_db
@@ -66,7 +66,7 @@ services:
       - kafka
 
   payment_service:
-    image: akmaleyzal/luminaceris-bank/payment_service:latest
+    image: akmaleyzal/luminacerisbank-payment_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=payment_db
@@ -81,7 +81,7 @@ services:
       - kafka
 
   card_management_service:
-    image: akmaleyzal/luminaceris-bank/card_management_service:latest
+    image: akmaleyzal/luminacerisbank-card_management_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=card_db
@@ -96,7 +96,7 @@ services:
       - kafka
 
   loan_service:
-    image: akmaleyzal/luminaceris-bank/loan_service:latest
+    image: akmaleyzal/luminacerisbank-loan_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=loan_db
@@ -111,7 +111,7 @@ services:
       - kafka
 
   notification_service:
-    image: akmaleyzal/luminaceris-bank/notification_service:latest
+    image: akmaleyzal/luminacerisbank-notification_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=notification_db
@@ -126,7 +126,7 @@ services:
       - kafka
 
   audit_service:
-    image: akmaleyzal/luminaceris-bank/audit_service:latest
+    image: akmaleyzal/luminacerisbank-audit_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=audit_db
@@ -140,7 +140,7 @@ services:
       - kafka
 
   fraud_detection_service:
-    image: akmaleyzal/luminaceris-bank/fraud_detection_service:latest
+    image: akmaleyzal/luminacerisbank-fraud_detection_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=fraud_db
@@ -154,7 +154,7 @@ services:
       - kafka
 
   support_service:
-    image: akmaleyzal/luminaceris-bank/support_service:latest
+    image: akmaleyzal/luminacerisbank-support_service:latest
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=support_db
@@ -173,57 +173,57 @@ services:
   # ============================
 
   login_page:
-    image: akmaleyzal/luminaceris-bank/login_page:latest
+    image: akmaleyzal/luminacerisbank-login_page:latest
     networks:
       - webnet
 
   home_page:
-    image: akmaleyzal/luminaceris-bank/home_page:latest
+    image: akmaleyzal/luminacerisbank-home_page:latest
     networks:
       - webnet
 
   cardManagement_page:
-    image: akmaleyzal/luminaceris-bank/cardManagement_page:latest
+    image: akmaleyzal/luminacerisbank-cardmanagement_page:latest
     networks:
       - webnet
 
   fraudAlert_page:
-    image: akmaleyzal/luminaceris-bank/fraudAlert_page:latest
+    image: akmaleyzal/luminacerisbank-fraudalert_page:latest
     networks:
       - webnet
 
   history_page:
-    image: akmaleyzal/luminaceris-bank/history_page:latest
+    image: akmaleyzal/luminacerisbank-history_page:latest
     networks:
       - webnet
 
   loan_page:
-    image: akmaleyzal/luminaceris-bank/loan_page:latest
+    image: akmaleyzal/luminacerisbank-loan_page:latest
     networks:
       - webnet
 
   notificationCenter_page:
-    image: akmaleyzal/luminaceris-bank/notificationCenter_page:latest
+    image: akmaleyzal/luminacerisbank-notificationcenter_page:latest
     networks:
       - webnet
 
   paymentService_page:
-    image: akmaleyzal/luminaceris-bank/paymentService_page:latest
+    image: akmaleyzal/luminacerisbank-paymentservice_page:latest
     networks:
       - webnet
 
   profileSetting_page:
-    image: akmaleyzal/luminaceris-bank/profileSetting_page:latest
+    image: akmaleyzal/luminacerisbank-profilesetting_page:latest
     networks:
       - webnet
 
   support_page:
-    image: akmaleyzal/luminaceris-bank/support_page:latest
+    image: akmaleyzal/luminacerisbank-support_page:latest
     networks:
       - webnet
 
   transfer_page:
-    image: akmaleyzal/luminaceris-bank/transfer_page:latest
+    image: akmaleyzal/luminacerisbank-transfer_page:latest
     networks:
       - webnet
 
