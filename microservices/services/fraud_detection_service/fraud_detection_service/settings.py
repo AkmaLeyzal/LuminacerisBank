@@ -82,7 +82,7 @@ MONGODB_SETTINGS = {
     'db': 'fraud_db',
     'username': os.getenv('MONGODB_USERNAME'),
     'password': os.getenv('MONGODB_PASSWORD'),
-    'host': f'mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/',
+    'host': f"mongodb+srv://{os.getenv('MONGODB_USERNAME')}:{os.getenv('MONGODB_PASSWORD')}@akmaleyzaldatabases.lfu1fxc.mongodb.net/",
     'authentication_source': 'admin',  # Sesuaikan jika diperlukan
 }
 
