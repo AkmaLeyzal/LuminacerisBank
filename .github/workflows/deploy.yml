@@ -36,7 +36,7 @@ jobs:
           context: ./microservices/services/auth_service
           file: ./microservices/services/auth_service/Dockerfile
           push: true
-          tags: akmaleyzal/luminacerisbank-auth_services:latest
+          tags: akmaleyzal/luminacerisbank-auth_service:latest
           build-args: |
             SECRET_KEY_AUTH_SERVICE=${{ secrets.SECRET_KEY_AUTH_SERVICE }}
             AUTH_DB_PASSWORD=${{ secrets.AUTH_DB_PASSWORD }}
