@@ -41,7 +41,7 @@ COPY --from=build /usr/local/lib/python3.10/site-packages /usr/local/lib/python3
 COPY --from=build /LuminacerisBank/microservices/services/auth_service /LuminacerisBank/microservices/services/auth_service
 
 # Install Gunicorn
-RUN pip install gunicorn
+RUN gunicorn --version
 
 # Expose port
 EXPOSE 8000

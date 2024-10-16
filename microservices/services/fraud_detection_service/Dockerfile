@@ -40,7 +40,7 @@ COPY --from=build /usr/local/lib/python3.10/site-packages /usr/local/lib/python3
 COPY --from=build /LuminacerisBank/microservices/services/fraud_detection_service /LuminacerisBank/microservices/services/fraud_detection_service
 
 # Install Gunicorn
-RUN pip install gunicorn
+RUN gunicorn --version
 
 # Expose port
 EXPOSE 8000
