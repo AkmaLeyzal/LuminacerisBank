@@ -165,14 +165,14 @@ jobs:
         with:
           context: ./micro-frontend/frontend/cardManagement_page/card
           push: true
-          tags: akmaleyzal/luminacerisbank-cardManagement_page:latest
+          tags: akmaleyzal/luminacerisbank-cardmanagement_page:latest
 
       - name: Build and push Fraud Alert Page
         uses: docker/build-push-action@v4
         with:
           context: ./micro-frontend/frontend/fraudAlert_page/fraud
           push: true
-          tags: akmaleyzal/luminacerisbank-fraudAlert_page:latest
+          tags: akmaleyzal/luminacerisbank-fraudalert_page:latest
 
       - name: Build and push History Page
         uses: docker/build-push-action@v4
@@ -193,21 +193,21 @@ jobs:
         with:
           context: ./micro-frontend/frontend/notificationCenter_page/notification
           push: true
-          tags: akmaleyzal/luminacerisbank-notificationCenter_page:latest
+          tags: akmaleyzal/luminacerisbank-notificationcenter_page:latest
 
       - name: Build and push Payment Service Page
         uses: docker/build-push-action@v4
         with:
           context: ./micro-frontend/frontend/paymentService_page/payment
           push: true
-          tags: akmaleyzal/luminacerisbank-paymentService_page:latest
+          tags: akmaleyzal/luminacerisbank-paymentservice_page:latest
 
       - name: Build and push Profile Setting Page
         uses: docker/build-push-action@v4
         with:
           context: ./micro-frontend/frontend/profileSetting_page/profile
           push: true
-          tags: akmaleyzal/luminacerisbank-profileSetting_page:latest
+          tags: akmaleyzal/luminacerisbank-profilesetting_page:latest
 
       - name: Build and push Support Page
         uses: docker/build-push-action@v4
