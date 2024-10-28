@@ -1,50 +1,38 @@
 # Stage 1: Build the application
-FROM python:3.10-slim AS build
+FROM python:3.10.12-slim-bullseye AS build
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
 WORKDIR /LuminacerisBank/microservices/services/auth_service
 
-# Install dependencies
+# Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Copy the project
+# Copy application code
 COPY . .
 
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Stage 2: Run the application
-FROM python:3.10-slim
+# Stage 2: Production-ready image
+FROM python:3.10.12-slim-bullseye
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set working directory
 WORKDIR /LuminacerisBank/microservices/services/auth_service
 
-# Install dependencies
+# Copy dependencies from the build stage
 COPY --from=build /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+
+# Copy the app files from the build stage
 COPY --from=build /LuminacerisBank/microservices/services/auth_service /LuminacerisBank/microservices/services/auth_service
 
-# Install Gunicorn
-RUN gunicorn --version
-
-# Expose port
+# Expose the port for the app
 EXPOSE 8000
 
-# Start Gunicorn
-CMD ["gunicorn", "auth_service.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Command to run the application
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "auth_service.wsgi:application"]
