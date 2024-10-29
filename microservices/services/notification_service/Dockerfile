@@ -1,39 +1,50 @@
-# Stage 1: Build the application
 FROM python:3.10.12-slim-bullseye AS build
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Set working directory
 WORKDIR /LuminacerisBank/microservices/services/notification_service
 
-# Install dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy the project
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install wheel && \
+    pip install -r requirements.txt
+
+RUN pip install --force-reinstall gunicorn
+
 COPY . .
 
-# Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Stage 2: Run the application
 FROM python:3.10.12-slim-bullseye
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PATH="/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ENV PYTHONPATH=/LuminacerisBank/microservices/services/notification_service
 
-# Set working directory
 WORKDIR /LuminacerisBank/microservices/services/notification_service
 
-# Install dependencies
-COPY --from=build /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    libpq-dev \
+    curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install wheel && \
+    pip install -r requirements.txt && \
+    pip install --force-reinstall gunicorn && \
+    ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
+
 COPY --from=build /LuminacerisBank/microservices/services/notification_service /LuminacerisBank/microservices/services/notification_service
 
-# Expose port
 EXPOSE 8000
 
-# Start Gunicorn
-CMD ["gunicorn", "notification_service.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--worker-class", "gevent"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "notification_service.wsgi:application", "--workers", "3", "--timeout", "60"]
