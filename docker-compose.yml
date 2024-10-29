@@ -7,6 +7,8 @@ services:
 
   auth_service:
     image: akmaleyzal/luminacerisbank-auth_service:latest
+    ports:
+      - "8001:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=auth_db
@@ -22,6 +24,8 @@ services:
 
   user_management_service:
     image: akmaleyzal/luminacerisbank-user_management_service:latest
+    ports:
+      - "8002:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=user_db
@@ -37,6 +41,8 @@ services:
 
   account_service:
     image: akmaleyzal/luminacerisbank-account_service:latest
+    ports:
+      - "8003:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=account_db
@@ -52,6 +58,8 @@ services:
 
   transaction_service:
     image: akmaleyzal/luminacerisbank-transaction_service:latest
+    ports:
+      - "8004:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=transaction_db
@@ -67,6 +75,8 @@ services:
 
   payment_service:
     image: akmaleyzal/luminacerisbank-payment_service:latest
+    ports:
+      - "8005:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=payment_db
@@ -82,6 +92,8 @@ services:
 
   card_management_service:
     image: akmaleyzal/luminacerisbank-card_management_service:latest
+    ports:
+      - "8006:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=card_db
@@ -97,6 +109,8 @@ services:
 
   loan_service:
     image: akmaleyzal/luminacerisbank-loan_service:latest
+    ports:
+      - "8007:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=loan_db
@@ -112,6 +126,8 @@ services:
 
   notification_service:
     image: akmaleyzal/luminacerisbank-notification_service:latest
+    ports:
+      - "8008:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=notification_db
@@ -127,6 +143,8 @@ services:
 
   audit_service:
     image: akmaleyzal/luminacerisbank-audit_service:latest
+    ports:
+      - "8009:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=audit_db
@@ -141,6 +159,8 @@ services:
 
   fraud_detection_service:
     image: akmaleyzal/luminacerisbank-fraud_detection_service:latest
+    ports:
+      - "8010:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=fraud_db
@@ -155,6 +175,8 @@ services:
 
   support_service:
     image: akmaleyzal/luminacerisbank-support_service:latest
+    ports:
+      - "8011:8000"
     environment:
       - DATABASE_HOST=postgres
       - DATABASE_NAME=support_db
