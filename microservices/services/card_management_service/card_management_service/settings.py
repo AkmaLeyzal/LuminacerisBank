@@ -76,6 +76,21 @@ DATABASES = {
     }
 }
 
+# Add to settings.py:
+CARD_SETTINGS = {
+    'MAX_PIN_ATTEMPTS': 3,
+    'PIN_ATTEMPT_TIMEOUT': 1800,  # 30 minutes
+    'CACHE_TIMEOUT': {
+        'CARD_DATA': 3600,       # 1 hour
+        'USAGE_DATA': 86400,     # 24 hours
+    },
+    'SECURITY_LEVELS': {
+        1: {'intl_enabled': False, 'online_enabled': False},
+        2: {'intl_enabled': False, 'online_enabled': True},
+        3: {'intl_enabled': True, 'online_enabled': True},
+    }
+}
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

@@ -94,6 +94,24 @@ REST_FRAMEWORK = {
     ),
 }
 
+# Add to settings.py:
+LOAN_SETTINGS = {
+    'CACHE_TIMEOUT': {
+        'LOAN_STATUS': 3600,      # 1 hour
+        'PAYMENT_STATUS': 3600,   # 1 hour
+        'SCHEDULE': 3600,         # 1 hour
+        'CALCULATIONS': 86400,    # 24 hours
+    },
+    'DOCUMENT_TYPES': {
+        'REQUIRED': ['APPLICATION', 'IDENTITY', 'INCOME'],
+        'OPTIONAL': ['COLLATERAL', 'PAYMENT'],
+    },
+    'LATE_PAYMENT': {
+        'GRACE_PERIOD_DAYS': 3,
+        'LATE_FEE_PERCENTAGE': float('0.01'),  # 1% late fee
+    }
+}
+
 # Simple JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),

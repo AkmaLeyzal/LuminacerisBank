@@ -76,6 +76,18 @@ DATABASES = {
     }
 }
 
+# Add to settings.py:
+# Redis Transaction Settings
+TRANSACTION_SETTINGS = {
+    'DAILY_LIMIT': float('50000'),
+    'RATE_LIMIT_PER_MINUTE': 10,
+    'CACHE_TIMEOUT': {
+        'TRANSACTION_STATUS': 3600,  # 1 hour
+        'ACCOUNT_BALANCE': 300,      # 5 minutes
+        'RATE_LIMIT': 60,           # 1 minute
+    }
+}
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

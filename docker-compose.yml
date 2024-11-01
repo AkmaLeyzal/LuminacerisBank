@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ============================
   # Microservices
@@ -10,6 +8,7 @@ services:
     ports:
       - "8001:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=auth_db
       - DATABASE_USER=auth_admin
@@ -27,6 +26,7 @@ services:
     ports:
       - "8002:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=user_db
       - DATABASE_USER=user_admin
@@ -44,6 +44,7 @@ services:
     ports:
       - "8003:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=account_db
       - DATABASE_USER=account_admin
@@ -61,6 +62,7 @@ services:
     ports:
       - "8004:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=transaction_db
       - DATABASE_USER=transaction_admin
@@ -78,6 +80,7 @@ services:
     ports:
       - "8005:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=payment_db
       - DATABASE_USER=payment_admin
@@ -95,6 +98,7 @@ services:
     ports:
       - "8006:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=card_db
       - DATABASE_USER=card_admin
@@ -112,6 +116,7 @@ services:
     ports:
       - "8007:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=loan_db
       - DATABASE_USER=loan_admin
@@ -129,6 +134,7 @@ services:
     ports:
       - "8008:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=notification_db
       - DATABASE_USER=notification_admin
@@ -146,6 +152,7 @@ services:
     ports:
       - "8009:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=audit_db
       - MONGODB_USERNAME=${MONGODB_USERNAME}
@@ -162,6 +169,7 @@ services:
     ports:
       - "8010:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=fraud_db
       - MONGODB_USERNAME=${MONGODB_USERNAME}
@@ -178,6 +186,7 @@ services:
     ports:
       - "8011:8000"
     environment:
+      - DOCKER_CONTAINER=true
       - DATABASE_HOST=postgres
       - DATABASE_NAME=support_db
       - MONGODB_USERNAME=${MONGODB_USERNAME}

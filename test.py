@@ -1,0 +1,2 @@
+
+print(${AUTH_DB_PASSWORD})

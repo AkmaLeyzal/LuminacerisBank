@@ -76,6 +76,16 @@ DATABASES = {
     }
 }
 
+# Add to settings.py:
+PAYMENT_SETTINGS = {
+    'RATE_LIMIT_PER_MINUTE': 5,
+    'CACHE_TIMEOUT': {
+        'PAYMENT_STATUS': 3600,    # 1 hour
+        'PROVIDER_DATA': 3600,     # 1 hour
+        'RATE_LIMIT': 60,          # 1 minute
+    }
+}
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

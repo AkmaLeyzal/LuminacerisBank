@@ -4,6 +4,11 @@ from pathlib import Path
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = BASE_DIR.parent.parent.parent
+
+if not os.getenv('DOCKER_CONTAINER'):  # atau check environment lain yang diset di Docker
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(ROOT_DIR, '.env'))
 
 # Secret key for Django, fetched from environment variables for security
 SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE', 'default_secret_key')
@@ -78,6 +83,82 @@ DATABASES = {
     }
 }
 
+REDIS_PORT = 14028
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://redis-14028.c334.asia-southeast2-1.gce.redns.redis-cloud.com:{REDIS_PORT}/0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": os.getenv('REDIS_PASSWORD'),
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "RETRY_ON_TIMEOUT": True,
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 20,  # Reduce for small scale
+                "timeout": 5
+            },
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # Enable compression to save memory
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+        "KEY_PREFIX": "auth"  # Prefix untuk menghindari konflik
+    }
+}
+
+# Cache time settings
+CACHE_TTL = 60 * 15  # 15 minutes for general cache
+CACHE_TTL_SHORT = 60 * 5  # 5 minutes for frequent updates
+CACHE_TTL_LONG = 60 * 60 * 24  # 24 hours for stable data
+
+# Cache key patterns
+CACHE_KEYS = {
+    'TOKEN': 'token:{}',
+    'USER_SESSION': 'session:{}',
+    'RATE_LIMIT': 'rate:{}:{}',
+    'BLACKLIST': 'blacklist:{}',
+}
+
+# Session Configuration
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 86400  # 24 hours
+
+# Memory optimization settings for Redis
+REDIS_MAX_MEMORY_POLICY = {
+    'POLICY': 'allkeys-lru',  # Least Recently Used eviction
+    'SAMPLES': 5,
+    'MAX_MEMORY': '25mb'  # Keep some buffer from 30mb
+}
+
+# Rate limiting settings
+RATE_LIMIT = {
+    'LOGIN': {
+        'ATTEMPTS': 6,
+        'WINDOW': 300  # 5 minutes
+    },
+    'API': {
+        'ATTEMPTS': 100,
+        'WINDOW': 60  # 1 minute
+    }
+}
+
+# JWT settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,  # Menggunakan SECRET_KEY yang sudah ada
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',
+}
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -94,16 +175,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
-}
-
-# Simple JWT settings
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 
+        'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100
 }
 
 # CORS settings to allow specified origins
