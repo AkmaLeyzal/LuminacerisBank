@@ -14,6 +14,7 @@ from .models import User, UserSession
 from .utils.redis_utils import RedisService
 import jwt
 from datetime import datetime
+from .kafka_events import AuthKafkaEvents
 
 class RegisterView(views.APIView):
     def post(self, request):
@@ -29,6 +30,7 @@ class RegisterView(views.APIView):
 class LoginView(views.APIView):
     def post(self, request):
         # Check rate limit
+        kafka_events = AuthKafkaEvents()
         ip = request.META.get('REMOTE_ADDR')
         if not RedisService.check_rate_limit('LOGIN', ip):
             return Response({
@@ -59,6 +61,11 @@ class LoginView(views.APIView):
             'tokens': tokens,
             'user': UserProfileSerializer(user).data
         })
+
+        kafka_events.publish_login_event(
+            user.id, 
+            'success', 
+            request.META.get('REMOTE_ADDR'))
 
 class LogoutView(views.APIView):
     permission_classes = [IsAuthenticated]

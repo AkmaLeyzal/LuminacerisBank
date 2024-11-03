@@ -9,6 +9,7 @@ import uuid
 from kafka import KafkaProducer
 import json
 import os
+from .kafka_events import TransactionKafkaEvents
 
 producer = KafkaProducer(
     bootstrap_servers=os.environ.get('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092'),
@@ -47,3 +48,15 @@ class TransactionListView(generics.ListAPIView):
         user_id = self.request.user.id
         return Transaction.objects.filter(from_account_id=user_id) | Transaction.objects.filter(to_account_id=user_id)
 
+class TransactionView(APIView):
+    async def post(self, request):
+        kafka_events = TransactionKafkaEvents()
+        
+        # Start transaction
+        kafka_events.publish_transaction(transaction_data)
+        
+        # Process transaction
+        transaction = await self.process_transaction(transaction_data)
+        
+        # Complete transaction
+        kafka_events.publish_transaction_completed(transaction)

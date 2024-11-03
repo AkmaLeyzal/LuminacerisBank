@@ -5,6 +5,11 @@ import mongoengine
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = BASE_DIR.parent.parent.parent
+
+if not os.getenv('DOCKER_CONTAINER'):
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(ROOT_DIR, '.env'))
 
 # Secret key for Django, fetched from environment variables for security
 SECRET_KEY = os.getenv('SECRET_KEY_SUPPORT_SERVICE', 'default_secret_key')
@@ -26,8 +31,8 @@ INSTALLED_APPS = [
     'corsheaders',  # For handling CORS
     'rest_framework',  # Django Rest Framework
     'rest_framework_simplejwt.token_blacklist',  # Simple JWT Token Blacklist
-    # 'rest_framework_mongoengine',
-    # 'app_support_service',  # Main app for this service
+    'rest_framework_mongoengine',
+    'app_support_service',  # Main app for this service
 ]
 
 # Middleware configuration including CORS

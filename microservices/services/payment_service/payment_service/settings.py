@@ -4,6 +4,11 @@ from pathlib import Path
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = BASE_DIR.parent.parent.parent
+
+if not os.getenv('DOCKER_CONTAINER'):
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(ROOT_DIR, '.env'))
 
 # Secret key for Django, fetched from environment variables for security
 SECRET_KEY = os.getenv('SECRET_KEY_PAYMENT_SERVICE', 'default_secret_key')
@@ -68,10 +73,10 @@ WSGI_APPLICATION = 'payment_service.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME', 'payment_db'),
+        'NAME': os.getenv('DATABASE_NAME', 'payment_rds'),
         'USER': os.getenv('DATABASE_USER', 'payment_admin'),
         'PASSWORD': os.getenv('PAYMENT_DB_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+        'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
 }
@@ -94,7 +99,83 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Django Rest Framework settings with Simple JWT
+REDIS_PORT = 14028
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://redis-14028.c334.asia-southeast2-1.gce.redns.redis-cloud.com:{REDIS_PORT}/0",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PASSWORD": os.getenv('REDIS_PASSWORD'),
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "RETRY_ON_TIMEOUT": True,
+            "CONNECTION_POOL_KWARGS": {
+                "max_connections": 20,  # Reduce for small scale
+                "timeout": 5
+            },
+            "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
+        },
+        "KEY_PREFIX": "auth"  # Prefix untuk menghindari konflik
+    }
+}
+
+# Cache time settings
+CACHE_TTL = 60 * 15  # 15 minutes for general cache
+CACHE_TTL_SHORT = 60 * 5  # 5 minutes for frequent updates
+CACHE_TTL_LONG = 60 * 60 * 24  # 24 hours for stable data
+
+# Cache key patterns
+CACHE_KEYS = {
+    'TOKEN': 'token:{}',
+    'USER_SESSION': 'session:{}',
+    'RATE_LIMIT': 'rate:{}:{}',
+    'BLACKLIST': 'blacklist:{}',
+}
+
+# Session Configuration
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 86400  # 24 hours
+
+# Memory optimization settings for Redis
+REDIS_MAX_MEMORY_POLICY = {
+    'POLICY': 'allkeys-lru',  # Least Recently Used eviction
+    'SAMPLES': 5,
+    'MAX_MEMORY': '25mb'  # Keep some buffer from 30mb
+}
+
+# Rate limiting settings
+RATE_LIMIT = {
+    'LOGIN': {
+        'ATTEMPTS': 6,
+        'WINDOW': 300  # 5 minutes
+    },
+    'API': {
+        'ATTEMPTS': 100,
+        'WINDOW': 60  # 1 minute
+    }
+}
+
+# JWT settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,  # Menggunakan SECRET_KEY yang sudah ada
+    'VERIFYING_KEY': None,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'JTI_CLAIM': 'jti',
+}
+
+# Django Rest Framework settings 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -102,22 +183,70 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 
+        'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100
 }
 
-# Simple JWT settings
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-}
-
-# CORS settings to allow specified origins
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://your-production-frontend.com',
+    "http://localhost:80",     # Nginx
+    "http://localhost:8001",   # Auth Service
+    "http://localhost:8002",   # User Management Service
+    "http://localhost:8003",   # Account Service
+    "http://localhost:8004",   # Transaction Service
+    "http://localhost:8005",   # Payment Service
+    "http://localhost:8006",   # Card Management Service
+    "http://localhost:8007",   # Loan Service
+    "http://localhost:8008",   # Notification Service
+    "http://localhost:8009",   # Audit Service
+    "http://localhost:8010",   # Fraud Detection Service
+    "http://localhost:8011",   # Support Service
+    # Frontend origins
+    "http://localhost:3000",   # React development
+    "http://localhost/login_page",
+    "http://localhost/home_page",
+    "http://localhost/cardManagement_page",
+    "http://localhost/fraudAlert_page",
+    "http://localhost/history_page",
+    "http://localhost/loan_page",
+    "http://localhost/notificationCenter_page",
+    "http://localhost/paymentService_page",
+    "http://localhost/profileSetting_page",
+    "http://localhost/support_page",
+    "http://localhost/transfer_page",
+]
+
+# Additional CORS settings
+# CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-api-key',
+    'cache-control',
+    'pragma'
 ]
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')

@@ -1,6 +1,136 @@
 # loan_service/loan/models.py (lanjutan)
+# loan_service/loan/models.py
+from django.db import models
+from django.core.cache import cache
+from decimal import Decimal
+import uuid
+import datetime
 
-class LoanPayment(models.Model):  # Lanjutan implementasi sebelumnya
+class Loan(models.Model):
+    class LoanStatus(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        PENDING = 'PENDING', 'Pending Approval'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+        DISBURSED = 'DISBURSED', 'Disbursed'
+        COMPLETED = 'COMPLETED', 'Completed'
+        DEFAULTED = 'DEFAULTED', 'Defaulted'
+
+    class LoanType(models.TextChoices):
+        PERSONAL = 'PERSONAL', 'Personal Loan'
+        HOME = 'HOME', 'Home Loan'
+        BUSINESS = 'BUSINESS', 'Business Loan'
+
+    loan_id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    user_id = models.IntegerField()
+    account_id = models.IntegerField()
+    loan_type = models.CharField(max_length=50, choices=LoanType.choices)
+    
+    # Loan details
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    term_months = models.IntegerField()
+    monthly_payment = models.DecimalField(max_digits=15, decimal_places=2)
+    total_interest = models.DecimalField(max_digits=15, decimal_places=2)
+    
+    # Additional details
+    purpose = models.CharField(max_length=100)
+    collateral_type = models.CharField(max_length=50, null=True)
+    collateral_value = models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    
+    # Status
+    status = models.CharField(
+        max_length=20,
+        choices=LoanStatus.choices,
+        default=LoanStatus.DRAFT
+    )
+    rejection_reason = models.TextField(null=True)
+    risk_score = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    
+    # Dates
+    disbursement_date = models.DateField(null=True)
+    first_payment_date = models.DateField(null=True)
+    maturity_date = models.DateField(null=True)
+    
+    # Security and tracking
+    created_by = models.IntegerField()  # User ID who initiated
+    approved_by = models.IntegerField(null=True)
+    session_id = models.CharField(max_length=255)
+    auth_token_jti = models.CharField(max_length=255)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'loans'
+        indexes = [
+            models.Index(fields=['user_id']),
+            models.Index(fields=['account_id']),
+            models.Index(fields=['status']),
+            models.Index(fields=['disbursement_date']),
+        ]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Cache loan status and details
+        self._update_loan_cache()
+
+    def _update_loan_cache(self):
+        """Update loan information in Redis cache"""
+        cache_key = f'loan:{self.loan_id}'
+        loan_data = {
+            'status': self.status,
+            'amount': str(self.amount),
+            'monthly_payment': str(self.monthly_payment),
+            'next_payment_date': self.get_next_payment_date(),
+            'remaining_balance': str(self.get_remaining_balance())
+        }
+        cache.set(cache_key, loan_data, timeout=3600)
+
+class LoanPayment(models.Model):
+    class PaymentStatus(models.TextChoices):
+        SCHEDULED = 'SCHEDULED', 'Scheduled'
+        PENDING = 'PENDING', 'Pending'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+        LATE = 'LATE', 'Late'
+
+    payment_id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
+    payment_number = models.IntegerField()
+    
+    # Payment breakdown
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    principal_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    interest_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    late_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Dates and status
+    due_date = models.DateField()
+    paid_date = models.DateField(null=True)
+    status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.SCHEDULED
+    )
+    
+    payment_method = models.CharField(max_length=50)
+    transaction_reference = models.CharField(max_length=100, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'loan_payments'
+        indexes = [
+            models.Index(fields=['loan', 'payment_number']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['status']),
+        ]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update payment status in cache
+        self._update_payment_cache()
+
     def _update_payment_cache(self):
         """Cache payment status and next payment info"""
         # Update payment status

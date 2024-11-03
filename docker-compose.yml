@@ -9,12 +9,12 @@ services:
       - "8001:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=auth_db
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_NAME=auth_rds
       - DATABASE_USER=auth_admin
       - DATABASE_PASSWORD=${AUTH_DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_AUTH_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -27,12 +27,12 @@ services:
       - "8002:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=user_db
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_NAME=user_rds
       - DATABASE_USER=user_admin
       - DATABASE_PASSWORD=${USER_DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_USER_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -45,12 +45,12 @@ services:
       - "8003:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=account_db
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_NAME=account_rds
       - DATABASE_USER=account_admin
       - DATABASE_PASSWORD=${ACCOUNT_DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_ACCOUNT_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -63,12 +63,12 @@ services:
       - "8004:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=transaction_db
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_NAME=transaction_rds
       - DATABASE_USER=transaction_admin
       - DATABASE_PASSWORD=${TRANSACTION_DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_TRANSACTION_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -81,12 +81,12 @@ services:
       - "8005:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=payment_db
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_NAME=payment_rds
       - DATABASE_USER=payment_admin
       - DATABASE_PASSWORD=${PAYMENT_DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_PAYMENT_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -99,12 +99,12 @@ services:
       - "8006:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=card_db
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_NAME=card_rds
       - DATABASE_USER=card_admin
       - DATABASE_PASSWORD=${CARD_DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_CARD_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -117,12 +117,12 @@ services:
       - "8007:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=loan_db
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_NAME=loan_rds
       - DATABASE_USER=loan_admin
       - DATABASE_PASSWORD=${LOAN_DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_LOAN_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -135,12 +135,12 @@ services:
       - "8008:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
+      - DATABASE_HOST=${DATABASE_HOST}
       - DATABASE_NAME=notification_db
       - DATABASE_USER=notification_admin
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -153,12 +153,12 @@ services:
       - "8009:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
+      - DATABASE_HOST=${DATABASE_HOST}
       - DATABASE_NAME=audit_db
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_AUDIT_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -170,12 +170,12 @@ services:
       - "8010:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
+      - DATABASE_HOST=${DATABASE_HOST}
       - DATABASE_NAME=fraud_db
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_FRAUD_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:
@@ -187,12 +187,12 @@ services:
       - "8011:8000"
     environment:
       - DOCKER_CONTAINER=true
-      - DATABASE_HOST=postgres
+      - DATABASE_HOST=${DATABASE_HOST}
       - DATABASE_NAME=support_db
       - MONGODB_USERNAME=${MONGODB_USERNAME}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY_SUPPORT_SERVICE}
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - CONFLUENT_BOOTSTRAP_SERVERS=${CONFLUENT_BOOTSTRAP_SERVERS}
     networks:
       - webnet
     depends_on:

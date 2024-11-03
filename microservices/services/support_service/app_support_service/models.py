@@ -1,45 +1,127 @@
-# services/support_service/support/models.py
-
-from mongoengine import Document, StringField, IntField, DateTimeField, ListField, EmbeddedDocument, EmbeddedDocumentField
+# support_service/support/models.py
+from mongoengine import Document, EmbeddedDocument, fields
 from datetime import datetime
 
-class Response(EmbeddedDocument):
-    responder_id = IntField(required=True)  # ID staf yang merespon
-    message = StringField(required=True, max_length=1024)
-    timestamp = DateTimeField(default=datetime.utcnow)
+class Comment(EmbeddedDocument):
+    comment_id = fields.UUIDField(required=True)
+    user_id = fields.IntField(required=True)
+    user_type = fields.StringField(choices=['CUSTOMER', 'AGENT', 'SUPERVISOR'])
+    content = fields.StringField(required=True)
+    attachments = fields.ListField(fields.DictField())
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
+    is_internal = fields.BooleanField(default=False)
 
 class SupportTicket(Document):
-    ticket_number = StringField(required=True, unique=True, max_length=50)
-    user_id = IntField(required=True)
-    subject = StringField(required=True, max_length=255)
-    description = StringField(required=True)
-    CATEGORY_CHOICES = (
-        ('Teknis', 'Teknis'),
-        ('Akun', 'Akun'),
-        ('Pembayaran', 'Pembayaran'),
-    )
-    STATUS_CHOICES = (
-        ('Baru', 'Baru'),
-        ('Dalam Proses', 'Dalam Proses'),
-        ('Selesai', 'Selesai'),
-    )
-    PRIORITY_CHOICES = (
-        ('Rendah', 'Rendah'),
-        ('Menengah', 'Menengah'),
-        ('Tinggi', 'Tinggi'),
-    )
-    category = StringField(required=True, choices=CATEGORY_CHOICES)
-    status = StringField(required=True, choices=STATUS_CHOICES, default='Baru')
-    priority = StringField(required=True, choices=PRIORITY_CHOICES, default='Menengah')
-    created_at = DateTimeField(default=datetime.utcnow)
-    updated_at = DateTimeField(default=datetime.utcnow)
-    assigned_to = IntField(required=False, default=None)
-    responses = ListField(EmbeddedDocumentField(Response))
+    ticket_number = fields.StringField(required=True, unique=True)
+    user_id = fields.IntField(required=True)
+    category = fields.StringField(required=True, choices=[
+        'ACCOUNT', 'TRANSACTION', 'CARD', 'LOAN',
+        'TECHNICAL', 'FRAUD', 'COMPLAINT', 'INQUIRY'
+    ])
+    subcategory = fields.StringField()
+    priority = fields.StringField(choices=['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'])
+    status = fields.StringField(choices=[
+        'OPEN', 'ASSIGNED', 'IN_PROGRESS', 'PENDING_CUSTOMER',
+        'PENDING_THIRD_PARTY', 'RESOLVED', 'CLOSED', 'REOPENED'
+    ])
+    
+    # Ticket details
+    title = fields.StringField(required=True)
+    description = fields.StringField(required=True)
+    attachments = fields.ListField(fields.DictField())
+    
+    # Assignment
+    assigned_to = fields.IntField()  # Agent ID
+    assigned_team = fields.StringField()
+    escalated_to = fields.IntField()  # Supervisor ID
+    escalation_reason = fields.StringField()
+    
+    # SLA tracking
+    sla_due_at = fields.DateTimeField()
+    first_response_at = fields.DateTimeField()
+    resolution_due_at = fields.DateTimeField()
+    resolved_at = fields.DateTimeField()
+    
+    # Communication
+    comments = fields.EmbeddedDocumentListField(Comment)
+    last_customer_response_at = fields.DateTimeField()
+    last_agent_response_at = fields.DateTimeField()
+    
+    # Related entities
+    related_tickets = fields.ListField(fields.StringField())
+    related_entities = fields.DictField()  # Like transaction_id, card_id etc
+    
+    # Metadata
+    tags = fields.ListField(fields.StringField())
+    customer_satisfaction = fields.IntField(min_value=1, max_value=5)
+    feedback = fields.StringField()
+    
+    # Timestamps
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
+    closed_at = fields.DateTimeField()
 
     meta = {
         'collection': 'support_tickets',
-        'indexes': ['ticket_number', 'user_id', 'status', 'priority', 'assigned_to', 'created_at', 'updated_at']
+        'indexes': [
+            'ticket_number',
+            'user_id',
+            'status',
+            'assigned_to',
+            'category',
+            'priority',
+            ('user_id', '-created_at'),
+            ('assigned_to', 'status'),
+            'sla_due_at'
+        ]
     }
 
-    def __str__(self):
-        return f"SupportTicket {self.ticket_number} - {self.status}"
+class KnowledgeBaseArticle(Document):
+    title = fields.StringField(required=True)
+    slug = fields.StringField(required=True, unique=True)
+    content = fields.StringField(required=True)
+    category = fields.StringField(required=True)
+    tags = fields.ListField(fields.StringField())
+    published = fields.BooleanField(default=False)
+    view_count = fields.IntField(default=0)
+    helpful_count = fields.IntField(default=0)
+    not_helpful_count = fields.IntField(default=0)
+    created_by = fields.IntField()
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
+
+    meta = {
+        'collection': 'knowledge_base',
+        'indexes': [
+            'slug',
+            'category',
+            'tags',
+            'published',
+            '-view_count'
+        ]
+    }
+
+class SupportAgent(Document):
+    user_id = fields.IntField(required=True, unique=True)
+    name = fields.StringField(required=True)
+    email = fields.StringField(required=True)
+    role = fields.StringField(choices=['AGENT', 'SUPERVISOR', 'ADMIN'])
+    specialization = fields.ListField(fields.StringField())
+    teams = fields.ListField(fields.StringField())
+    is_available = fields.BooleanField(default=True)
+    max_tickets = fields.IntField(default=10)
+    current_tickets = fields.IntField(default=0)
+    performance_metrics = fields.DictField()
+    created_at = fields.DateTimeField(default=datetime.utcnow)
+    updated_at = fields.DateTimeField(default=datetime.utcnow)
+
+    meta = {
+        'collection': 'support_agents',
+        'indexes': [
+            'user_id',
+            'role',
+            'is_available',
+            'teams'
+        ]
+    }

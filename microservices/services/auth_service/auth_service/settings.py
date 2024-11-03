@@ -6,7 +6,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BASE_DIR.parent.parent.parent
 
-if not os.getenv('DOCKER_CONTAINER'):  # atau check environment lain yang diset di Docker
+if not os.getenv('DOCKER_CONTAINER'):
     from dotenv import load_dotenv
     load_dotenv(os.path.join(ROOT_DIR, '.env'))
 
@@ -75,13 +75,21 @@ AUTH_USER_MODEL = 'authentication.User'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DATABASE_NAME', 'auth_db'),
+        'NAME': os.getenv('DATABASE_NAME', 'auth_rds'),
         'USER': os.getenv('DATABASE_USER', 'auth_admin'),
         'PASSWORD': os.getenv('AUTH_DB_PASSWORD'),
-        'HOST': os.getenv('DATABASE_HOST', 'localhost'),
+        'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
     }
 }
+
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
 
 REDIS_PORT = 14028
 
@@ -99,7 +107,6 @@ CACHES = {
                 "max_connections": 20,  # Reduce for small scale
                 "timeout": 5
             },
-            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # Enable compression to save memory
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
         },
         "KEY_PREFIX": "auth"  # Prefix untuk menghindari konflik
@@ -159,15 +166,8 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
     'JTI_CLAIM': 'jti',
 }
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
 
-# Django Rest Framework settings with Simple JWT
+# Django Rest Framework settings 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -186,10 +186,59 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 100
 }
 
-# CORS settings to allow specified origins
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://your-production-frontend.com',
+    "http://localhost:80",     # Nginx
+    "http://localhost:8001",   # Auth Service
+    "http://localhost:8002",   # User Management Service
+    "http://localhost:8003",   # Account Service
+    "http://localhost:8004",   # Transaction Service
+    "http://localhost:8005",   # Payment Service
+    "http://localhost:8006",   # Card Management Service
+    "http://localhost:8007",   # Loan Service
+    "http://localhost:8008",   # Notification Service
+    "http://localhost:8009",   # Audit Service
+    "http://localhost:8010",   # Fraud Detection Service
+    "http://localhost:8011",   # Support Service
+    # Frontend origins
+    "http://localhost:3000",   # React development
+    "http://localhost/login_page",
+    "http://localhost/home_page",
+    "http://localhost/cardManagement_page",
+    "http://localhost/fraudAlert_page",
+    "http://localhost/history_page",
+    "http://localhost/loan_page",
+    "http://localhost/notificationCenter_page",
+    "http://localhost/paymentService_page",
+    "http://localhost/profileSetting_page",
+    "http://localhost/support_page",
+    "http://localhost/transfer_page",
+]
+
+# Additional CORS settings
+# CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-api-key',
+    'cache-control',
+    'pragma'
 ]
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
