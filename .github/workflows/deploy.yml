@@ -1,11 +1,12 @@
 # .github/workflows/deploy.yml
 
-name: Deploy to Docker Hub and Run Docker Compose
+name: Deploy CI/CD
 
 on:
   push:
     branches:
-      - main  # Ubah ke nama branch utama Anda jika berbeda
+      # - main  # Ubah ke nama branch utama Anda jika berbeda
+      - pull-request
 
 jobs:
   build-and-deploy:
