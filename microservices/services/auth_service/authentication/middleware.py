@@ -1,9 +1,12 @@
-# auth_service/authentication/middleware.py
+# microservices/services/auth_service/authentication/middleware.py
 from django.http import JsonResponse
 from django.core.cache import cache
-from datetime import datetime
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 import jwt
-from .models import User, TokenBlacklist
+import logging
+
+logger = logging.getLogger(__name__)
 
 class JWTAuthenticationMiddleware:
     def __init__(self, get_response):
@@ -15,53 +18,84 @@ class JWTAuthenticationMiddleware:
 
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
-            return JsonResponse({'error': 'Invalid authorization header'}, status=401)
+            return JsonResponse(
+                {'error': 'Invalid authorization header'},
+                status=401
+            )
 
         token = auth_header.split(' ')[1]
         try:
-            # Get token ID without verification first
-            unverified_payload = jwt.decode(
-                token,
-                options={'verify_signature': False}
-            )
-            token_id = unverified_payload.get('jti')
+            # Validate token
+            decoded_token = self._validate_token(token)
+            
+            # Check if token is blacklisted
+            if self._is_token_blacklisted(decoded_token['jti']):
+                return JsonResponse(
+                    {'error': 'Token is blacklisted'},
+                    status=401
+                )
 
-            # Check Redis cache first
-            cached_status = self._get_cached_token_status(token_id)
-            if cached_status == 'blacklisted':
-                return JsonResponse({'error': 'Token is blacklisted'}, status=401)
-
-            # Verify token fully
-            payload = jwt.decode(
-                token,
-                settings.JWT_SECRET_KEY,
-                algorithms=['HS256']
-            )
-
-            # Check if user is blocked
-            user_blocked = cache.get(f'user:blocked:{payload["user_id"]}')
-            if user_blocked:
-                return JsonResponse({'error': 'User is blocked'}, status=401)
-
-            # Attach user and payload to request
-            request.user_payload = payload
+            # Add user info to request
+            request.user_id = decoded_token['user_id']
+            request.user_roles = decoded_token.get('roles', [])
+            
             return self.get_response(request)
 
-        except jwt.ExpiredSignatureError:
-            return JsonResponse({'error': 'Token has expired'}, status=401)
-        except jwt.InvalidTokenError:
-            return JsonResponse({'error': 'Invalid token'}, status=401)
+        except (InvalidToken, TokenError) as e:
+            logger.warning(f"Token validation failed: {str(e)}")
+            return JsonResponse(
+                {'error': 'Invalid token'},
+                status=401
+            )
+        except Exception as e:
+            logger.error(f"Authentication error: {str(e)}")
+            return JsonResponse(
+                {'error': 'Authentication failed'},
+                status=500
+            )
 
-    def _should_skip_auth(self, path):
+    def _should_skip_auth(self, path: str) -> bool:
         """Check if path should skip authentication"""
         public_paths = [
             '/api/auth/login/',
             '/api/auth/register/',
-            '/api/auth/password/reset/',
-            '/api/health/',
+            '/health/',
         ]
         return any(path.startswith(p) for p in public_paths)
 
-    def _get_cached_token_status(self, token_id):
-        """Get token status from Redis cache"""
-        return cache.get(f'token:{token_id}')
+    def _validate_token(self, token: str) -> dict:
+        """Validate JWT token"""
+        try:
+            # First decode without verification to get JTI
+            unverified = jwt.decode(token, options={'verify_signature': False})
+            token_jti = unverified['jti']
+
+            # Check cache for valid token
+            cached_token = cache.get(f'token:{token_jti}')
+            if cached_token:
+                return cached_token
+
+            # Verify token if not in cache
+            decoded = jwt.decode(
+                token,
+                settings.SECRET_KEY,
+                algorithms=['HS256']
+            )
+
+            # Cache validated token
+            cache.set(
+                f'token:{token_jti}',
+                decoded,
+                timeout=300  # 5 minutes
+            )
+
+            return decoded
+
+        except jwt.ExpiredSignatureError:
+            raise InvalidToken('Token has expired')
+        except jwt.InvalidTokenError:
+            raise InvalidToken('Invalid token')
+
+    def _is_token_blacklisted(self, token_jti: str) -> bool:
+        """Check if token is blacklisted"""
+        return cache.get(f'blacklist:{token_jti}', False)

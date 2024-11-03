@@ -14,12 +14,9 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-# auth_service/auth_service/urls.py
-from django.contrib import admin
+# microservices/services/auth_service/auth_service/urls.py
 from django.urls import path, include
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('api/auth/', include('authentication.urls')),
 ]
-
