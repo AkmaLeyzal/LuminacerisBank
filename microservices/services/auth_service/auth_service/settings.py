@@ -1,10 +1,14 @@
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pathlib import Path
+import sys
+import json
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BASE_DIR.parent.parent.parent
+
+sys.path.append(str(ROOT_DIR))
 
 if not os.getenv('DOCKER_CONTAINER'):
     from dotenv import load_dotenv
@@ -14,8 +18,8 @@ if not os.getenv('DOCKER_CONTAINER'):
 SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE', 'default_secret_key')
 
 # Debug mode
-DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
-# DEBUG = 'True'
+# DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+DEBUG = 'True'
 
 # Allowed hosts
 ALLOWED_HOSTS = ['*']
@@ -92,21 +96,22 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = 14028
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://redis-14028.c334.asia-southeast2-1.gce.redns.redis-cloud.com:{REDIS_PORT}/0",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": os.getenv('REDIS_PASSWORD'),
+            "PASSWORD": REDIS_PASSWORD,
             "SOCKET_CONNECT_TIMEOUT": 5,
             "SOCKET_TIMEOUT": 5,
             "RETRY_ON_TIMEOUT": True,
             "CONNECTION_POOL_KWARGS": {
                 "max_connections": 20,  # Reduce for small scale
-                "timeout": 5
             },
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
         },
@@ -151,21 +156,40 @@ RATE_LIMIT = {
     }
 }
 
-# JWT settings
+JWT_SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE')
+JWT_REFRESH_SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE')
+
+# Simple JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,  # Menggunakan SECRET_KEY yang sudah ada
+    'SIGNING_KEY': JWT_SECRET_KEY,
     'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
     'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 # Django Rest Framework settings 
@@ -202,21 +226,21 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8011",   # Support Service
     # Frontend origins
     "http://localhost:3000",   # React development
-    "http://localhost/login_page",
-    "http://localhost/home_page",
-    "http://localhost/cardManagement_page",
-    "http://localhost/fraudAlert_page",
-    "http://localhost/history_page",
-    "http://localhost/loan_page",
-    "http://localhost/notificationCenter_page",
-    "http://localhost/paymentService_page",
-    "http://localhost/profileSetting_page",
-    "http://localhost/support_page",
-    "http://localhost/transfer_page",
+    # "http://localhost/login_page",
+    # "http://localhost/home_page",
+    # "http://localhost/cardManagement_page",
+    # "http://localhost/fraudAlert_page",
+    # "http://localhost/history_page",
+    # "http://localhost/loan_page",
+    # "http://localhost/notificationCenter_page",
+    # "http://localhost/paymentService_page",
+    # "http://localhost/profileSetting_page",
+    # "http://localhost/support_page",
+    # "http://localhost/transfer_page",
 ]
 
 # Additional CORS settings
-# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -262,16 +286,51 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
         },
+        'json': {
+            '()': 'authentication.utils.formatters.JsonFormatter',
+        }
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'authentication.utils.handlers.SafeFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'auth_service.log'),
+            'formatter': 'json',
+            'maxBytes': 1024 * 1024 * 100,  # 100 MB
+            'backupCount': 5,  # Keep 5 backup files
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        }
     },
+    'loggers': {
+        'authentication': {
+            'handlers': ['file', 'console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': True,
+        },
+    }
 }
+
+ENV_NAME = os.getenv('ENV_NAME', 'development')
+
+# Pastikan folder logs ada di level yang sama dengan manage.py
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+print(LOG_DIR)
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR, exist_ok=True)
 
 # if not DEBUG:
 #     SECURE_SSL_REDIRECT = True

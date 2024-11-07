@@ -1,53 +1,57 @@
-# auth_service/authentication/serializers.py
+# authentication/serializers.py
 from rest_framework import serializers
 from .models import User, UserSession
-from django.contrib.auth import authenticate
 
-class UserRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-    
+class LoginRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=50)
+    password = serializers.CharField(max_length=128, write_only=True)
+    device_info = serializers.DictField(required=True)
+
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'password', 'phone_number']
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'id': {'read_only': True}
-        }
+        fields = ['id', 'username', 'email', 'full_name', 'is_active', 'last_login']
+        read_only_fields = ['id', 'last_login']
 
-    def create(self, validated_data):
-        password = validated_data.pop('password')
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
-
-class UserLoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField()
-    device_info = serializers.CharField(required=False)
-
-    def validate(self, data):
-        user = authenticate(
-            email=data['email'],
-            password=data['password']
-        )
-        if not user:
-            raise serializers.ValidationError('Invalid credentials')
-        
-        if user.is_blocked:
-            raise serializers.ValidationError('Account is blocked')
-            
-        data['user'] = user
-        return data
-
-class UserSessionSerializer(serializers.ModelSerializer):
+class SessionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSession
-        fields = ['device_id', 'device_name', 'last_activity', 'is_active']
+        fields = ['session_id', 'device_name', 'device_type', 'ip_address', 
+                 'last_activity', 'created_at']
 
-class UserProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'email', 'username', 'phone_number', 'is_email_verified', 
-                 'is_phone_verified', 'preferred_language', 'last_login']
-        read_only_fields = ['id', 'email', 'is_email_verified', 'is_phone_verified']
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords don't match")
+        return data
+    
+class RegisterSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+    full_name = serializers.CharField(max_length=255, required=False)
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username already exists")
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already registered")
+        return value
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            full_name=validated_data.get('full_name', '')
+        )
+        user.status = User.Status.ACTIVE  # Atau PENDING jika ingin verifikasi email
+        user.save()
+        return user

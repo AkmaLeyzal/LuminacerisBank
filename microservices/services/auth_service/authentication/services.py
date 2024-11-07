@@ -6,8 +6,8 @@ from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ValidationError
 from typing import Dict, Tuple
 from .models import User, UserSession, TokenBlacklist, SecurityAuditLog
-from kafka.producer import KafkaProducer
-from kafka.topics import KafkaTopics
+from kafka_cloud.producer import KafkaProducer
+from kafka_cloud.topics import KafkaTopics
 import jwt
 import uuid
 import logging

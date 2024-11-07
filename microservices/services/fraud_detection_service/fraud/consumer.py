@@ -1,6 +1,6 @@
 # services/fraud_detection_service/fraud/consumer.py
 
-from kafka import KafkaConsumer
+from kafka_cloud import KafkaConsumer
 import json
 from .models import FraudAlert
 from datetime import datetime

@@ -4,14 +4,6 @@ from django.conf import settings
 import os
 
 class KafkaConfig:
-    TOPICS = {
-        'TRANSACTIONS': 'transactions',
-        'NOTIFICATIONS': 'notifications',
-        'FRAUD_ALERTS': 'fraud-alerts',
-        'USER_EVENTS': 'user-events',
-        'AUDIT_LOGS': 'audit-logs'
-    }
-
     @staticmethod
     def get_config() -> Dict:
         return {

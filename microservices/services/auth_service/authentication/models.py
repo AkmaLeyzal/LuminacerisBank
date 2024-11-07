@@ -6,6 +6,15 @@ from django.utils import timezone
 import jwt
 import uuid
 
+class Role(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
+    permissions = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+    
 class User(AbstractUser):
     class Status(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Active'
@@ -16,7 +25,9 @@ class User(AbstractUser):
     
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=50, unique=True)
+    full_name = models.CharField(max_length=255, blank=True)
     # password_hash dihapus karena duplikat dengan field password dari AbstractUser
+    roles = models.ManyToManyField(Role, related_name='users', blank=True)
     status = models.CharField(
         max_length=20, 
         choices=Status.choices, 
@@ -71,6 +82,14 @@ class User(AbstractUser):
             models.Index(fields=['last_activity']),
         ]
 
+    def get_all_permissions(self):
+        """Get all permissions from user roles"""
+        permissions = set()
+        for role in self.roles.all():
+            if role.permissions:
+                permissions.update(role.permissions.get('permissions', []))
+        return list(permissions)
+
     def generate_tokens(self):
         """Generate access and refresh tokens with Redis caching"""
         access_token_id = str(uuid.uuid4())
@@ -122,8 +141,8 @@ class User(AbstractUser):
         """Cache token data in Redis"""
         cache_key = f'token:{token_id}'
         cache.set(
-            cache_key,
-            payload,
+            key=cache_key,
+            value=payload,
             timeout=int((payload['exp'] - datetime.utcnow()).total_seconds())
         )
 
@@ -150,8 +169,8 @@ class TokenBlacklist(models.Model):
         # Cache blacklist status in Redis
         cache_key = f'blacklist:{self.token_jti}'
         cache.set(
-            cache_key,
-            'blacklisted',
+            key=cache_key,
+            value='blacklisted',
             timeout=int((self.expires_at - datetime.utcnow()).total_seconds())
         )
 
@@ -166,7 +185,7 @@ class UserSession(models.Model):
     device_name = models.CharField(max_length=255, null=True)
     device_type = models.CharField(max_length=50, null=True)
     user_agent = models.CharField(max_length=255)
-    ip_address = models.GenericIPAddressField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
     location = models.CharField(max_length=255, null=True)
     
     is_active = models.BooleanField(default=True)
@@ -194,8 +213,8 @@ class UserSession(models.Model):
             'expires_at': self.expires_at.isoformat()
         }
         cache.set(
-            cache_key,
-            session_data,
+            key=cache_key,
+            value=session_data,
             timeout=int((self.expires_at - datetime.utcnow()).total_seconds())
         )
 
@@ -213,15 +232,6 @@ class SecurityAuditLog(models.Model):
             models.Index(fields=['user', 'event_type']),
             models.Index(fields=['created_at']),
         ]
-
-class Role(models.Model):
-    role_name = models.CharField(max_length=50, unique=True)
-    description = models.TextField()
-    permissions = models.JSONField(default=dict)
-    created_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        db_table = 'roles'
 
 class UserRole(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE)

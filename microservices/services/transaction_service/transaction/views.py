@@ -6,7 +6,7 @@ from .models import Transaction
 from .serializers import TransactionSerializer
 from rest_framework.response import Response
 import uuid
-from kafka import KafkaProducer
+from kafka_cloud import KafkaProducer
 import json
 import os
 from .kafka_events import TransactionKafkaEvents

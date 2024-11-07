@@ -1,6 +1,6 @@
 # microservices/services/fraud_detection_service/fraud_detection/kafka_events.py
-from kafka.producer import KafkaProducer
-from kafka.consumer import KafkaConsumer
+from kafka_cloud.producer import KafkaProducer
+from kafka_cloud.consumer import KafkaConsumer
 import logging
 
 logger = logging.getLogger(__name__)

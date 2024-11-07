@@ -1,6 +1,6 @@
 # microservices/services/transaction_service/transaction/kafka_events.py
-from kafka.producer import KafkaProducer
-from kafka.consumer import KafkaConsumer
+from kafka_cloud.producer import KafkaProducer
+from kafka_cloud.consumer import KafkaConsumer
 from decimal import Decimal
 import logging
 

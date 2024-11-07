@@ -2,7 +2,7 @@
 # services/any_service/any_app/middleware.py
 
 import json
-from kafka import KafkaProducer
+from kafka_cloud import KafkaProducer
 from django.utils.deprecation import MiddlewareMixin
 import os
 

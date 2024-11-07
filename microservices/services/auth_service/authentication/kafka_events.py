@@ -1,6 +1,6 @@
 # microservices/services/auth_service/authentication/kafka_events.py
-from kafka.producer import KafkaProducer
-from kafka.consumer import KafkaConsumer
+from kafka_cloud.producer import KafkaProducer
+from kafka_cloud.consumer import KafkaConsumer
 from django.conf import settings
 from datetime import datetime
 import logging

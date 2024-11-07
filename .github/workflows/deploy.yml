@@ -260,6 +260,8 @@ jobs:
           MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
           MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
           POSTGRESQL_PASSWORD: ${{ secrets.POSTGRESQL_PASSWORD }}
           DATABASE_HOST: ${{ secrets.DATABASE_HOST }}
 
