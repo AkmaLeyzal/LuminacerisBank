@@ -1,44 +1,56 @@
 # authentication/kafka_handlers.py
+
 from kafka_cloud.consumer import KafkaConsumer
-from kafka_cloud.producer import KafkaProducer
 from kafka_cloud.topics import KafkaTopics
+from .services import SecurityService
+from .models import User
 import logging
 
 logger = logging.getLogger(__name__)
 
-class SecurityEventHandler:
+class AuthKafkaHandler:
     def __init__(self):
-        # Try to create topic first
-        try:
-            producer = KafkaProducer()
-            producer.create_topics([KafkaTopics.SECURITY_EVENTS])
-        except Exception as e:
-            logger.warning(f"Could not create Kafka topic: {str(e)}")
-
-        self.consumer = KafkaConsumer(
+        self.security_consumer = KafkaConsumer(
             group_id='auth_security_group',
-            topics=[KafkaTopics.SECURITY_EVENTS],
-            error_handler=self.handle_error
+            topics=[
+                KafkaTopics.SECURITY_EVENTS,
+                KafkaTopics.SUSPICIOUS_ACTIVITIES
+            ]
         )
 
-    def handle_error(self, error):
-        logger.error(f"Kafka error: {str(error)}")
-        # Don't raise exception, just log it
-        return True  # Continue processing
-
-    def start_consuming(self):
-        """Start consuming security events"""
+    def handle_security_event(self, data: dict, metadata: dict):
+        """Handle security-related events"""
         try:
-            logger.info("Starting security event consumer...")
-            self.consumer.consume_messages(self.handle_security_event)
-        except Exception as e:
-            logger.error(f"Error in security event consumer: {str(e)}")
+            event_type = data.get('event_type')
+            user_id = data.get('user_id')
+            
+            if not all([event_type, user_id]):
+                logger.error("Invalid security event data")
+                return
 
-    def handle_security_event(self, event_data):
-        """Handle incoming security events"""
-        try:
-            logger.info(f"Processing security event: {event_data}")
-            # Implementation of event handling
-            pass
+            user = User.objects.get(id=user_id)
+            
+            if event_type == 'SUSPICIOUS_LOGIN':
+                SecurityService.handle_suspicious_login(user, data)
+            elif event_type == 'MULTIPLE_FAILED_ATTEMPTS':
+                SecurityService.handle_failed_attempts(user, data)
+            elif event_type == 'FRAUD_DETECTED':
+                SecurityService.handle_fraud_detection(user, data)
+            else:
+                logger.warning(f"Unknown security event type: {event_type}")
+
+        except User.DoesNotExist:
+            logger.error(f"User not found for security event: {user_id}")
         except Exception as e:
             logger.error(f"Error handling security event: {str(e)}")
+
+    def start(self):
+        """Start consuming messages"""
+        try:
+            self.security_consumer.consume(self.handle_security_event)
+        except Exception as e:
+            logger.error(f"Failed to start Kafka consumer: {str(e)}")
+
+    def stop(self):
+        """Stop consuming messages"""
+        self.security_consumer.stop()

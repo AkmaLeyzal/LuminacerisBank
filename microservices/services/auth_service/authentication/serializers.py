@@ -1,57 +1,114 @@
 # authentication/serializers.py
+
 from rest_framework import serializers
-from .models import User, UserSession
+from .models import User, Role
 
-class LoginRequestSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=50)
-    password = serializers.CharField(max_length=128, write_only=True)
-    device_info = serializers.DictField(required=True)
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = ('id', 'name', 'permissions')
 
-class UserSerializer(serializers.ModelSerializer):
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8)
+    confirm_password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'full_name', 'is_active', 'last_login']
-        read_only_fields = ['id', 'last_login']
+        fields = (
+            'email', 'username', 'password', 'confirm_password',
+            'full_name', 'phone_number'
+        )
+        extra_kwargs = {
+            'email': {'required': True},
+            'username': {'required': True},
+            'full_name': {'required': True}
+        }
 
-class SessionSerializer(serializers.ModelSerializer):
+    def validate(self, data):
+        # Validate password match
+        if data.get('password') != data.get('confirm_password'):
+            raise serializers.ValidationError({
+                "password": "Passwords don't match."
+            })
+
+        # Validate email
+        email = data.get('email', '').lower()
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({
+                "email": "This email is already registered."
+            })
+
+        # Validate username
+        username = data.get('username', '').lower()
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError({
+                "username": "This username is already taken."
+            })
+
+        # Remove confirm_password from the data
+        if 'confirm_password' in data:
+            del data['confirm_password']
+
+        return data
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+    device_id = serializers.CharField(required=False)
+    device_name = serializers.CharField(required=False)
+    device_type = serializers.CharField(required=False)
+
+class TokenResponseSerializer(serializers.Serializer):
+    access_token = serializers.CharField()
+    refresh_token = serializers.CharField()
+    expires_in = serializers.IntegerField()
+    token_type = serializers.CharField(default='Bearer')
+
+class UserResponseSerializer(serializers.ModelSerializer):
+    roles = RoleSerializer(many=True, read_only=True)
+    permissions = serializers.SerializerMethodField()
+
     class Meta:
-        model = UserSession
-        fields = ['session_id', 'device_name', 'device_type', 'ip_address', 
-                 'last_activity', 'created_at']
+        model = User
+        fields = (
+            'id', 'email', 'username', 'full_name', 'roles',
+            'permissions', 'status', 'is_email_verified',
+            'last_login_date', 'phone_number'
+        )
 
-class PasswordChangeSerializer(serializers.Serializer):
-    current_password = serializers.CharField(required=True)
-    new_password = serializers.CharField(required=True)
-    confirm_password = serializers.CharField(required=True)
+    def get_permissions(self, obj):
+        return obj.get_all_permissions()
+
+class LoginResponseSerializer(serializers.Serializer):
+    user = UserResponseSerializer()
+    tokens = TokenResponseSerializer()
+    message = serializers.CharField()
+
+class EmailVerificationSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+
+class PasswordResetSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=8)
+    confirm_password = serializers.CharField()
 
     def validate(self, data):
         if data['new_password'] != data['confirm_password']:
-            raise serializers.ValidationError("Passwords don't match")
+            raise serializers.ValidationError({
+                "password": "Passwords don't match."
+            })
         return data
-    
-class RegisterSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-    full_name = serializers.CharField(max_length=255, required=False)
 
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Username already exists")
-        return value
+class TokenRefreshSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField()
 
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email already registered")
-        return value
-
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password'],
-            full_name=validated_data.get('full_name', '')
-        )
-        user.status = User.Status.ACTIVE  # Atau PENDING jika ingin verifikasi email
-        user.save()
-        return user
+class TokenRefreshResponseSerializer(serializers.Serializer):
+    access_token = serializers.CharField()
+    expires_in = serializers.IntegerField()

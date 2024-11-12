@@ -1,15 +1,18 @@
-# In apps.py
 from django.apps import AppConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AuthenticationConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'authentication'
     
     def ready(self):
-        """Start Kafka consumers when the application starts"""
-        # Avoid starting consumers in management commands
-        import sys
-        if ('runserver' in sys.argv or 'uvicorn' in sys.argv) and not any(arg.startswith('--help') for arg in sys.argv):
+        try:
+            import sys
             from .events.consumer_manager import ConsumerManager
-            consumer_manager = ConsumerManager()
-            consumer_manager.start_consumers()
+            if not any([arg.endswith('manage.py') for arg in sys.argv]):
+                consumer_manager = ConsumerManager()
+                consumer_manager.start()
+        except Exception as e:
+            logger.error(f"Failed to start Kafka consumers: {str(e)}")

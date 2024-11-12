@@ -1,30 +1,39 @@
 # authentication/utils/formatters.py
+
 import json
-from datetime import datetime
 import logging
+import traceback
+from datetime import datetime
+from django.utils import timezone
 
 class JsonFormatter(logging.Formatter):
     """Custom JSON formatter for logging"""
     
     def format(self, record):
         """Format log record as JSON"""
+        timestamp = datetime.fromtimestamp(record.created).isoformat()
+        
         log_data = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': timestamp,
             'level': record.levelname,
             'message': record.getMessage(),
-            'logger': record.name,
             'module': record.module,
-            'process': record.process,
-            'thread': record.thread,
+            'function': record.funcName,
+            'path': record.pathname,
+            'line_number': record.lineno,
+            'logger': record.name
         }
-
-        if hasattr(record, 'request_id'):
-            log_data['request_id'] = record.request_id
-
+        
+        # Add exception info if exists
         if record.exc_info:
-            log_data['exc_info'] = self.formatException(record.exc_info)
-
-        if hasattr(record, 'extra'):
-            log_data.update(record.extra)
-
+            log_data['exception'] = {
+                'type': record.exc_info[0].__name__,
+                'message': str(record.exc_info[1]),
+                'stacktrace': traceback.format_exception(*record.exc_info)
+            }
+            
+        # Add extra fields if any
+        if hasattr(record, 'extra_fields'):
+            log_data.update(record.extra_fields)
+            
         return json.dumps(log_data)

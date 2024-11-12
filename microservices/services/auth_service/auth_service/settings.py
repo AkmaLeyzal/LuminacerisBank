@@ -41,6 +41,8 @@ INSTALLED_APPS = [
 # Middleware configuration including CORS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    'authentication.utils.formaters.JsonFormatter',
+    'authentication.middleware.CORSMiddleware',
     'authentication.middleware.JWTAuthenticationMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -130,6 +132,8 @@ CACHE_KEYS = {
     'USER_SESSION': 'session:{}',
     'RATE_LIMIT': 'rate:{}:{}',
     'BLACKLIST': 'blacklist:{}',
+    'EMAIL_VERIFICATION': 'email_verification:{}',
+    'PASSWORD_RESET': 'password_reset_otp:{}'
 }
 
 # Session Configuration
@@ -192,6 +196,70 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
+JWT_AUTH = {
+    'JWT_SECRET_KEY': JWT_SECRET_KEY,
+    'JWT_REFRESH_SECRET_KEY': JWT_REFRESH_SECRET_KEY,
+    'JWT_ALGORITHM': 'HS256',
+    'JWT_VERIFY': True,
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_EXPIRATION_DELTA': timedelta(minutes=30),
+    'JWT_REFRESH_EXPIRATION_DELTA': timedelta(days=7),
+    'JWT_ALLOW_REFRESH': True,
+    'JWT_AUTH_HEADER_PREFIX': 'Bearer',
+    'JWT_AUTH_COOKIE': 'jwt-auth',
+    'JWT_AUTH_COOKIE_SECURE': not DEBUG,
+    'JWT_AUTH_COOKIE_SAMESITE': 'Lax' if DEBUG else 'None',
+    'JWT_AUTH_COOKIE_DOMAIN': os.getenv('COOKIE_DOMAIN', None),
+    'JWT_RESPONSE_PAYLOAD_HANDLER': 'authentication.utils.jwt.generate_jwt_payload'
+}
+
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
+# Microservices Communication Settings
+MICROSERVICES = {
+    'user_management': {
+        'base_url': f"http://{os.getenv('USER_MANAGEMENT_SERVICE_HOST', 'user_management_service')}:8002",
+        'timeout': 5,
+    },
+    'notification': {
+        'base_url': f"http://{os.getenv('NOTIFICATION_SERVICE_HOST', 'notification_service')}:8008",
+        'timeout': 5,
+    },
+    'fraud_detection': {
+        'base_url': f"http://{os.getenv('FRAUD_DETECTION_SERVICE_HOST', 'fraud_detection_service')}:8010",
+        'timeout': 5,
+    }
+}
+
+# AWS SES Configuration
+AWS_SES_ACCESS_KEY_ID = os.getenv('AWS_SES_ACCESS_KEY_ID')
+AWS_SES_SECRET_ACCESS_KEY = os.getenv('AWS_SES_SECRET_ACCESS_KEY')
+AWS_SES_REGION = os.getenv('AWS_SES_REGION')
+AWS_SES_CONFIGURATION_SET = os.getenv('AWS_SES_CONFIGURATION_SET')
+
+# Email Settings
+DEFAULT_FROM_EMAIL = 'luminacerisbank@gmail.com'  # Verified domain di SES
+SERVER_EMAIL = 'luminacerisbank@gmail.com'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = f'email-smtp.{AWS_SES_REGION}.amazonaws.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = AWS_SES_ACCESS_KEY_ID
+EMAIL_HOST_PASSWORD = AWS_SES_SECRET_ACCESS_KEY
+
+# Template Context
+EMAIL_TEMPLATE_CONTEXT = {
+    'company_name': 'Luminaceris Bank',
+    'support_email': 'luminacerisbank@gmail.com',
+    'website_url': os.getenv('FRONTEND_URL', 'http://localhost:3000'),
+    'company_address': 'Jl. Ketintang Baru XII No 34, Ketintang, Kec. Gayungan, Surabaya, Jawa Timur 60231',
+    'contact_phone': '+62 856789012',
+    'social_media': {
+        'facebook': 'https://facebook.com/luminacerisbank',
+        'twitter': 'https://twitter.com/luminacerisbank',
+        'instagram': 'https://instagram.com/luminacerisbank'
+    }
+}
 # Django Rest Framework settings 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -210,6 +278,23 @@ REST_FRAMEWORK = {
         'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 100
 }
+
+REST_FRAMEWORK.update({
+    'EXCEPTION_HANDLER': 'authentication.utils.exception_handlers.custom_exception_handler',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/minute',
+        'user': '1000/minute'
+    }
+})
+
+# Template Configuration untuk email templates
+TEMPLATES[0]['DIRS'] = [
+    os.path.join(BASE_DIR, 'authentication', 'templates')
+]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:80",     # Nginx
@@ -264,6 +349,12 @@ CORS_ALLOW_HEADERS = [
     'x-api-key',
     'cache-control',
     'pragma'
+]
+
+CORS_EXPOSE_HEADERS = [
+    'Content-Type',
+    'Authorization',
+    'X-CSRFToken',
 ]
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
@@ -326,9 +417,7 @@ LOGGING = {
 
 ENV_NAME = os.getenv('ENV_NAME', 'development')
 
-# Pastikan folder logs ada di level yang sama dengan manage.py
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
-print(LOG_DIR)
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR, exist_ok=True)
 

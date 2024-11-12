@@ -1,20 +1,26 @@
+# authentication/urls.py
+
 from django.urls import path
 from .views import (
+    RegisterView,
     LoginView,
     LogoutView,
-    TokenRefreshView,
-    RegisterView
+    EmailVerificationView,
+    PasswordResetRequestView,
+    VerifyOTPView,
+    PasswordResetView,
+    TokenRefreshView
 )
-# from .views.metadata import MetadataView 
+
+app_name = 'authentication'
 
 urlpatterns = [
-    # Auth endpoints
-    path('register/', RegisterView.as_view(), name='auth-register'),
-    path('login/', LoginView.as_view(), name='auth-login'),
-    path('logout/', LogoutView.as_view(), name='auth-logout'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='auth-token-refresh'),
-    
-    # Service metadata
-    # path('metadata/', MetadataView.as_view(), name='auth-metadata'),
-    # path('health/', HealthCheckView.as_view(), name='auth-health'),
+    path('register/', RegisterView.as_view(), name='register'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('verify-email/', EmailVerificationView.as_view(), name='verify-email'),
+    path('password-reset-request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
+    path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
+    path('password-reset/', PasswordResetView.as_view(), name='password-reset'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 ]

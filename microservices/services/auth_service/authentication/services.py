@@ -1,150 +1,451 @@
-# microservices/services/auth_service/authentication/services.py
-from datetime import datetime, timedelta
-from django.conf import settings
+# authentication/services.py
+
 from django.core.cache import cache
-from django.contrib.auth.hashers import check_password
-from django.core.exceptions import ValidationError
-from typing import Dict, Tuple
-from .models import User, UserSession, TokenBlacklist, SecurityAuditLog
-from kafka_cloud.producer import KafkaProducer
-from kafka_cloud.topics import KafkaTopics
-import jwt
-import uuid
+from django.conf import settings
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from datetime import datetime, timedelta
+from typing import Dict, Tuple, Optional
+import secrets
 import logging
 
+from .models import User, UserSession, SecurityAuditLog
+from .utils.token_utils import TokenManager
+from .utils.microservices import ServiceNotifier
+from kafka_cloud.producer import KafkaProducer
+from kafka_cloud.topics import KafkaTopics
+from .utils.ses_utils import SESEmailService, AuthEmailService, EmailTemplateService
+from .utils.cache_utils import CacheService, TokenCache, SessionCache, RateLimitCache
+
 logger = logging.getLogger(__name__)
+kafka_producer = KafkaProducer()
+email_service = AuthEmailService()
+cache_service = CacheService()
 
-class AuthService:
-    def __init__(self):
-        self.kafka_producer = KafkaProducer()
-        self.cache_ttl = settings.CACHE_TTL
-
-    async def authenticate_user(self, username: str, password: str, request_data: Dict) -> Tuple[User, Dict]:
-        """Authenticate user and return tokens"""
+class RegistrationService:
+    @staticmethod
+    def register_user(data: Dict) -> Tuple[User, str]:
+        """Handle user registration process"""
         try:
-            # Get user from cache first
-            cache_key = f'user:{username}'
-            user = cache.get(cache_key)
+            # Create user with pending status
+            user = User.objects.create_user(
+                username=data['username'],
+                email=data['email'].lower(),
+                password=data['password'],
+                full_name=data['full_name'],
+                phone_number=data.get('phone_number'),
+                status=User.Status.PENDING,
+                is_active=False
+            )
 
-            if not user:
-                user = await User.objects.select_related().get(username=username)
-                cache.set(cache_key, user, timeout=self.cache_ttl['USER_SESSION'])
+            # Generate verification token
+            verification_token = secrets.token_urlsafe(32)
+            user.email_verification_token = verification_token
+            user.save()
 
-            # Check user status
-            if user.is_blocked:
-                await self._log_security_event(
-                    user, 
-                    'LOGIN_BLOCKED',
-                    request_data
-                )
-                raise ValidationError("Account is blocked")
+            # Cache verification token
+            cache_key = f"email_verification:{verification_token}"
+            cache.set(cache_key, user.id, timeout=3600)  # 1 hour expiry
 
-            # Check password
-            if not check_password(password, user.password_hash):
-                await self._handle_failed_login(user, request_data)
-                raise ValidationError("Invalid credentials")
+            # Send verification email menggunakan SES
+            if not email_service.send_verification_email(user, verification_token):
+                logger.error(f"Failed to send verification email to {user.email}")
 
-            # Generate tokens
-            tokens = self._generate_tokens(user)
+            # Notify other services
+            user_data = {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'full_name': user.full_name,
+                'status': user.status
+            }
+            ServiceNotifier.notify_user_created(user_data)
 
-            # Create session
-            await self._create_session(user, tokens, request_data)
-
-            # Update user login info
-            user.last_login_date = datetime.now()
-            user.last_login_ip = request_data.get('ip_address')
-            await user.save()
-            cache.delete(cache_key)  # Invalidate user cache
-
-            # Publish login event
-            self.kafka_producer.produce(
-                KafkaTopics.USER_EVENTS,
-                {
-                    'event_type': 'USER_LOGIN',
-                    'data': {
-                        'user_id': user.id,
-                        'username': user.username,
-                        'status': 'success',
-                        'ip_address': request_data.get('ip_address'),
-                        'timestamp': str(datetime.now())
-                    }
+            # Produce Kafka event
+            kafka_producer.produce(
+                topic=KafkaTopics.USER_EVENTS,
+                key=str(user.id),
+                value={
+                    "event_type": "USER_REGISTERED",
+                    "user_id": user.id,
+                    "email": user.email,
+                    "timestamp": datetime.now().isoformat()
                 }
             )
 
-            return user, tokens
+            return user, verification_token
+
+        except Exception as e:
+            logger.error(f"Registration error: {str(e)}")
+            raise
+
+    @staticmethod
+    def verify_email(token: str) -> bool:
+        """Verify user email with token"""
+        cache_key = f"email_verification:{token}"
+        user_id = cache.get(cache_key)
+
+        if not user_id:
+            raise ValueError("Invalid or expired verification token")
+
+        try:
+            user = User.objects.get(id=user_id)
+            if user.email_verification_token != token:
+                raise ValueError("Invalid verification token")
+
+            user.is_email_verified = True
+            user.status = User.Status.ACTIVE
+            user.is_active = True
+            user.email_verification_token = None
+            user.save()
+
+            # Clear verification token from cache
+            cache_service.delete(cache_key)
+
+            # Produce Kafka event
+            kafka_producer.produce(
+                topic=KafkaTopics.USER_EVENTS,
+                key=str(user.id),
+                value={
+                    "event_type": "EMAIL_VERIFIED",
+                    "user_id": user.id,
+                    "email": user.email,
+                    "timestamp": datetime.now().isoformat()
+                }
+            )
+
+            return True
 
         except User.DoesNotExist:
-            logger.warning(f"Login attempt with non-existent username: {username}")
-            raise ValidationError("Invalid credentials")
+            raise ValueError("User not found")
+        except Exception as e:
+            logger.error(f"Email verification error: {str(e)}")
+            raise
+
+    @staticmethod
+    def _send_verification_email(user: User, token: str):
+        """Send email verification email"""
+        try:
+            context = {
+                'user': user,
+                'verification_url': f"{settings.FRONTEND_URL}/verify-email?token={token}"
+            }
+            html_message = render_to_string('email/verify_email.html', context)
+
+            send_mail(
+                subject="Verify your Luminaceris Bank account",
+                message="",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                html_message=html_message
+            )
+        except Exception as e:
+            logger.error(f"Error sending verification email: {str(e)}")
+            raise
+
+class AuthenticationService:
+    @staticmethod
+    def authenticate_user(email: str, password: str, request_data: Dict) -> User:
+        """Authenticate user and handle security checks"""
+        try:
+            ip_address = request_data.get('ip_address', '')
+            
+            # Check rate limiting using RateLimitCache
+            attempts = RateLimitCache.get_attempts(ip_address, 'LOGIN')
+            
+            if attempts >= settings.SECURITY_CONFIG['MAX_LOGIN_ATTEMPTS']:
+                raise ValueError("Too many login attempts. Please try again later.")
+
+            try:
+                user = User.objects.get(email=email.lower())
+            except User.DoesNotExist:
+                RateLimitCache.increment_attempts(ip_address, 'LOGIN')
+                raise ValueError("Invalid credentials")
+
+            if not user.check_password(password):
+                AuthenticationService._handle_failed_login(user, ip_address)
+                raise ValueError("Invalid credentials")
+
+            # Check user status
+            if user.status != User.Status.ACTIVE:
+                raise ValueError(f"Account is {user.status}")
+
+            if not user.is_email_verified:
+                raise ValueError("Email not verified")
+
+             # Reset failed attempts
+            RateLimitCache.reset_attempts(ip_address, 'LOGIN')
+            
+            # Update user
+            user.failed_login_attempts = 0
+            user.last_login_ip = ip_address
+            user.last_login_date = timezone.now()
+            user.last_activity = timezone.now()
+            user.save()
+
+            # Check for suspicious activity
+            try:
+                fraud_check = ServiceNotifier.check_login_security({
+                    'user_id': user.id,
+                    'ip_address': ip_address,
+                    'user_agent': request_data.get('user_agent'),
+                    'device_id': request_data.get('device_id')
+                })
+                
+                if fraud_check.get('risk_level') == 'HIGH':
+                    raise ValueError("Login blocked for security reasons")
+            except Exception as e:
+                logger.error(f"Fraud check error: {str(e)}")
+
+            return user
+
         except Exception as e:
             logger.error(f"Authentication error: {str(e)}")
             raise
 
-    def _generate_tokens(self, user: User) -> Dict:
-        """Generate access and refresh tokens"""
-        access_token_jti = str(uuid.uuid4())
-        refresh_token_jti = str(uuid.uuid4())
+    @staticmethod
+    def create_session(user: User, tokens: Dict, request_data: Dict) -> UserSession:
+        """Create new user session"""
+        session = UserSession.objects.create(
+            user=user,
+            access_token_jti=tokens['access_token_id'],
+            refresh_token_jti=tokens['refresh_token_id'],
+            device_id=request_data.get('device_id'),
+            device_name=request_data.get('device_name'),
+            device_type=request_data.get('device_type'),
+            user_agent=request_data.get('user_agent', ''),
+            ip_address=request_data.get('ip_address'),
+            expires_at=timezone.now() + timedelta(days=7)
+        )
 
-        # Access token payload
-        access_payload = {
-            'token_type': 'access',
-            'jti': access_token_jti,
+        # Cache session data
+        session_data = {
             'user_id': user.id,
-            'username': user.username,
-            'exp': datetime.utcnow() + timedelta(minutes=settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME'])
+            'access_token_jti': tokens['access_token_id'],
+            'device_id': request_data.get('device_id'),
+            'is_active': True
         }
+        SessionCache.store_session(
+            str(session.session_id),
+            session_data,
+            timeout=7*24*60*60
+        )
 
-        # Refresh token payload
-        refresh_payload = {
-            'token_type': 'refresh',
-            'jti': refresh_token_jti,
-            'user_id': user.id,
-            'exp': datetime.utcnow() + timedelta(days=settings.JWT_SETTINGS['REFRESH_TOKEN_LIFETIME'])
-        }
+        # Log security audit
+        SecurityAuditLog.objects.create(
+            user=user,
+            event_type='LOGIN',
+            ip_address=request_data.get('ip_address'),
+            user_agent=request_data.get('user_agent', ''),
+            event_details={
+                'device_id': request_data.get('device_id'),
+                'session_id': str(session.session_id)
+            }
+        )
 
-        return {
-            'access_token': jwt.encode(
-                access_payload,
-                settings.SECRET_KEY,
-                algorithm=settings.JWT_SETTINGS['ALGORITHM']
-            ),
-            'refresh_token': jwt.encode(
-                refresh_payload,
-                settings.SECRET_KEY,
-                algorithm=settings.JWT_SETTINGS['ALGORITHM']
-            ),
-            'access_token_jti': access_token_jti,
-            'refresh_token_jti': refresh_token_jti,
-            'token_type': 'Bearer',
-            'expires_in': settings.JWT_SETTINGS['ACCESS_TOKEN_LIFETIME'] * 60
-        }
+        return session
 
-    async def _handle_failed_login(self, user: User, request_data: Dict):
+    @staticmethod
+    def _handle_failed_attempt(rate_limit_key: str):
         """Handle failed login attempt"""
-        cache_key = f'login_attempts:{user.id}'
-        attempts = cache.get(cache_key, 0) + 1
-        cache.set(cache_key, attempts, timeout=settings.LOGIN_ATTEMPT_TIMEOUT * 60)
+        cache.incr(rate_limit_key)
+        cache.expire(
+            rate_limit_key, 
+            settings.SECURITY_CONFIG['LOGIN_ATTEMPT_WINDOW']
+        )
 
-        user.failed_login_attempts = attempts
-        user.last_failed_login = datetime.now()
+    @staticmethod
+    def _handle_failed_login(user: User, rate_limit_key: str):
+        """Handle failed login for existing user"""
+        user.failed_login_attempts += 1
+        user.last_failed_login = timezone.now()
+        user.save()
 
-        if attempts >= settings.MAX_LOGIN_ATTEMPTS:
-            user.is_blocked = True
-            user.blocked_at = datetime.now()
-            user.block_reason = 'Too many failed login attempts'
+        AuthenticationService._handle_failed_attempt(rate_limit_key)
 
-            self.kafka_producer.produce(
-                KafkaTopics.SECURITY_EVENTS,
-                {
-                    'event_type': 'ACCOUNT_BLOCKED',
-                    'data': {
-                        'user_id': user.id,
-                        'username': user.username,
-                        'reason': 'Too many failed login attempts',
-                        'ip_address': request_data.get('ip_address'),
-                        'timestamp': str(datetime.now())
-                    }
+        if user.failed_login_attempts >= settings.SECURITY_CONFIG['MAX_LOGIN_ATTEMPTS']:
+            user.status = User.Status.LOCKED
+            user.save()
+
+            ServiceNotifier.notify_security_event(
+                user_id=user.id,
+                event_type='ACCOUNT_LOCKED',
+                details={'reason': 'Too many failed login attempts'}
+            )
+
+class PasswordService:
+    @staticmethod
+    def initiate_reset(email: str) -> Optional[str]:
+        """Initiate password reset process"""
+        try:
+            user = User.objects.get(email=email.lower())
+            
+            # Generate OTP
+            otp = ''.join(secrets.choice('0123456789') for _ in range(6))
+            
+            # Cache OTP
+            cache_key = f"password_reset_otp:{email.lower()}"
+            cache.set(cache_key, otp, timeout=300)  # 5 minutes
+
+            # Send OTP email menggunakan SES
+            if not email_service.send_password_reset_email(user, otp):
+                logger.error(f"Failed to send password reset email to {email}")
+                raise ValueError("Failed to send reset email")
+            
+            # Log security audit
+            SecurityAuditLog.objects.create(
+                user=user,
+                event_type='PASSWORD_RESET_INITIATED',
+                ip_address='system',
+                user_agent='system',
+                event_details={'email': email}
+            )
+
+            return otp
+
+        except User.DoesNotExist:
+            # Return None but don't indicate if user exists
+            return None
+        except Exception as e:
+            logger.error(f"Password reset initiation error: {str(e)}")
+            raise
+
+    @staticmethod
+    def verify_otp(email: str, otp: str) -> bool:
+        """Verify password reset OTP"""
+        cache_key = cache_service.generate_key('PASSWORD_RESET', email.lower())
+        stored_otp = cache_service.get(cache_key)
+
+        if not stored_otp or stored_otp != otp:
+            return False
+
+        # Generate reset token
+        reset_token = secrets.token_urlsafe(32)
+        token_key = f"password_reset_token:{reset_token}"
+        cache_service.set(token_key, email.lower(), timeout=900)  # 15 minutes
+
+        # Clear OTP
+        cache_service.delete(cache_key)
+
+        return True
+
+    @staticmethod
+    def reset_password(token: str, new_password: str) -> bool:
+        """Reset user password"""
+        try:
+            token_key = cache_service.generate_key('PASSWORD_RESET_TOKEN', token)
+            email = cache_service.get(token_key)
+
+            if not email:
+                raise ValueError("Invalid or expired reset token")
+
+            user = User.objects.get(email=email)
+            user.set_password(new_password)
+            user.password_changed_at = timezone.now()
+            user.save()
+
+            # Invalidate all user sessions
+            UserSession.objects.filter(user=user).update(is_active=False)
+
+            # Clear all related cache
+            cache_service.delete(token_key)
+            SessionCache.invalidate_session(str(user.id))
+
+            # Log security audit
+            SecurityAuditLog.objects.create(
+                user=user,
+                event_type='PASSWORD_RESET_COMPLETED',
+                ip_address='system',
+                user_agent='system',
+                event_details={'email': email}
+            )
+
+            # Produce Kafka event
+            kafka_producer.produce(
+                topic=KafkaTopics.SECURITY_EVENTS,
+                key=str(user.id),
+                value={
+                    "event_type": "PASSWORD_RESET",
+                    "user_id": user.id,
+                    "timestamp": datetime.now().isoformat()
                 }
             )
 
-        await user.save()
+            return True
+
+        except Exception as e:
+            logger.error(f"Password reset error: {str(e)}")
+            raise
+
+    @staticmethod
+    def _send_reset_email(user: User, otp: str):
+        """Send password reset email with OTP"""
+        try:
+            context = {
+                'user': user,
+                'otp': otp,
+                'valid_minutes': 5
+            }
+            html_message = render_to_string('email/password_reset.html', context)
+
+            send_mail(
+                subject="Reset Your Luminaceris Bank Password",
+                message="",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                html_message=html_message
+            )
+        except Exception as e:
+            logger.error(f"Error sending password reset email: {str(e)}")
+            raise
+
+class SecurityService:
+    @staticmethod
+    def handle_suspicious_login(user: User, details: Dict):
+        """Handle suspicious login detection"""
+        from .events.handlers import SecurityEventHandler
+        SecurityEventHandler.handle_suspicious_login(user, details)
+
+    @staticmethod
+    def handle_failed_attempts(user: User, details: Dict):
+        """Handle multiple failed login attempts"""
+        from .events.handlers import SecurityEventHandler
+        SecurityEventHandler.handle_failed_attempts(user, details)
+
+    @staticmethod
+    def handle_fraud_detection(user: User, details: Dict):
+        """Handle fraud detection alert"""
+        try:
+            # Update user status
+            user.status = User.Status.BLOCKED
+            user.is_blocked = True
+            user.blocked_at = timezone.now()
+            user.block_reason = details.get('reason', 'Fraud detection alert')
+            user.blocked_by = 'fraud_detection'
+            user.save()
+
+            # Invalidate all sessions
+            UserSession.objects.filter(user=user).update(is_active=False)
+
+            # Clear user's cache
+            cache_service.delete(f"user_permissions:{user.id}")
+
+            # Log security audit
+            SecurityAuditLog.objects.create(
+                user=user,
+                event_type='FRAUD_DETECTED',
+                ip_address=details.get('ip_address', 'system'),
+                user_agent=details.get('user_agent', 'system'),
+                event_details=details
+            )
+
+            # Send alert email
+            email_service.send_account_blocked_email(
+                user=user,
+                reason="Suspected fraudulent activity"
+            )
+
+        except Exception as e:
+            logger.error(f"Error handling fraud detection: {str(e)}")
+            raise
