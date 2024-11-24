@@ -35,15 +35,15 @@ INSTALLED_APPS = [
     'corsheaders',  # For handling CORS
     'rest_framework',  # Django Rest Framework
     'rest_framework_simplejwt.token_blacklist',  # Simple JWT Token Blacklist
-    'authentication',  # Main app for this service
+    'authentication.apps.AuthenticationConfig',  # Main app for this service
 ]
 
 # Middleware configuration including CORS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'authentication.utils.formaters.JsonFormatter',
-    'authentication.middleware.CORSMiddleware',
-    'authentication.middleware.JWTAuthenticationMiddleware',
+    # 'authentication.middleware.CORSMiddleware', 
+    # 'authentication.utils.formatters.JsonFormatter',
+    # 'authentication.middleware.JWTAuthenticationMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -60,7 +60,7 @@ ROOT_URLCONF = 'auth_service.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # Add your template directories here if any
+        'DIRS': [os.path.join(BASE_DIR, 'authentication', 'templates')],  # Add your template directories here if any
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -213,7 +213,44 @@ JWT_AUTH = {
     'JWT_RESPONSE_PAYLOAD_HANDLER': 'authentication.utils.jwt.generate_jwt_payload'
 }
 
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+SECURITY_CONFIG = {
+    'LOGIN': {
+        'MAX_ATTEMPTS': 5,
+        'LOCKOUT_TIME': 30,  # minutes
+        'ATTEMPT_TIMEOUT': 300,  # seconds (5 minutes)
+    },
+    'PASSWORD_POLICY': {
+        'MIN_LENGTH': 8,
+        'REQUIRE_UPPERCASE': True,
+        'REQUIRE_LOWERCASE': True,
+        'REQUIRE_NUMBERS': True,
+        'REQUIRE_SPECIAL_CHARS': True,
+        'PASSWORD_HISTORY': 5,
+        'MAX_AGE': 90  # days
+    },
+    'SESSION': {
+        'MAX_CONCURRENT': 5,
+        'EXTEND_ON_ACCESS': True,
+        'IDLE_TIMEOUT': 1800,  # seconds (30 minutes)
+        'ABSOLUTE_TIMEOUT': 86400,  # seconds (24 hours)
+    },
+    'TOKEN': {
+        'ACCESS_TOKEN_LIFETIME': 1800,  # seconds (30 minutes)
+        'REFRESH_TOKEN_LIFETIME': 604800,  # seconds (7 days)
+        'ROTATE_REFRESH_TOKENS': True,
+        'BLACKLIST_AFTER_ROTATION': True,
+    },
+    'DEVICE_TRACKING': {
+        'ENABLED': True,
+        'TRUSTED_DEVICES_ONLY': False,
+        'VERIFY_NEW_DEVICES': False,
+    }
+}
+
+print(SECURITY_CONFIG['LOGIN']['MAX_ATTEMPTS'])
+
+# FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+FRONTEND_URL = 'http://localhost:8001/api/auth'
 
 # Microservices Communication Settings
 MICROSERVICES = {
@@ -374,52 +411,71 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Hapus konfigurasi LOGGING yang lama dan ganti dengan ini
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+            'format': '%(levelname)s %(asctime)s %(name)s %(process)d %(thread)d %(message)s'
         },
-        'json': {
-            '()': 'authentication.utils.formatters.JsonFormatter',
-        }
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'authentication.utils.handlers.SafeFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'auth_service.log'),
-            'formatter': 'json',
-            'maxBytes': 1024 * 1024 * 100,  # 100 MB
-            'backupCount': 5,  # Keep 5 backup files
-        },
         'console': {
-            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+            'level': 'DEBUG',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'auth_service.log'),
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 5,
             'formatter': 'verbose',
+            'level': 'INFO',
         }
     },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
     'loggers': {
-        'authentication': {
-            'handlers': ['file', 'console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': True,
-        },
         'django': {
-            'handlers': ['file', 'console'],
-            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
-            'propagate': True,
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'authentication': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
     }
 }
 
+# Ensure logs directory exists
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR, exist_ok=True)
+
 ENV_NAME = os.getenv('ENV_NAME', 'development')
 
-LOG_DIR = os.path.join(BASE_DIR, 'logs')
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR, exist_ok=True)
+# LOG_DIR = os.path.join(BASE_DIR, 'logs')
+# if not os.path.exists(LOG_DIR):
+#     os.makedirs(LOG_DIR, exist_ok=True)
 
 # if not DEBUG:
 #     SECURE_SSL_REDIRECT = True

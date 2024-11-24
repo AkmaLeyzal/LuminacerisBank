@@ -24,7 +24,7 @@ class CacheService:
 
     @staticmethod
     def set(key: str, value: Any, timeout: Optional[int] = None) -> bool:
-        """Set value in cache with optional timeout"""
+        """Set value in cache"""
         try:
             cache.set(key, value, timeout=timeout)
             return True

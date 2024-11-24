@@ -35,8 +35,11 @@ class RegistrationService:
                 password=data['password'],
                 full_name=data['full_name'],
                 phone_number=data.get('phone_number'),
-                status=User.Status.PENDING,
-                is_active=False
+                # status=User.Status.PENDING,
+                # is_active=False
+                status=User.Status.ACTIVE,  # Langsung set ACTIVE
+                is_active=True,            # Langsung set True
+                is_email_verified=True     # Langsung set True
             )
 
             # Generate verification token
@@ -45,12 +48,12 @@ class RegistrationService:
             user.save()
 
             # Cache verification token
-            cache_key = f"email_verification:{verification_token}"
-            cache.set(cache_key, user.id, timeout=3600)  # 1 hour expiry
+            # cache_key = f"email_verification:{verification_token}"
+            # cache.set(cache_key, user.id, timeout=3600)  # 1 hour expiry
 
             # Send verification email menggunakan SES
-            if not email_service.send_verification_email(user, verification_token):
-                logger.error(f"Failed to send verification email to {user.email}")
+            # if not email_service.send_verification_email(user, verification_token):
+            #     logger.error(f"Failed to send verification email to {user.email}")
 
             # Notify other services
             user_data = {
@@ -60,7 +63,7 @@ class RegistrationService:
                 'full_name': user.full_name,
                 'status': user.status
             }
-            ServiceNotifier.notify_user_created(user_data)
+            # ServiceNotifier.notify_user_created(user_data)
 
             # Produce Kafka event
             kafka_producer.produce(
@@ -74,7 +77,7 @@ class RegistrationService:
                 }
             )
 
-            return user, verification_token
+            return user, None, #verification_token hanya digunakan jika frondend sudah ada
 
         except Exception as e:
             logger.error(f"Registration error: {str(e)}")
@@ -154,7 +157,7 @@ class AuthenticationService:
             # Check rate limiting using RateLimitCache
             attempts = RateLimitCache.get_attempts(ip_address, 'LOGIN')
             
-            if attempts >= settings.SECURITY_CONFIG['MAX_LOGIN_ATTEMPTS']:
+            if attempts >= settings.SECURITY_CONFIG['LOGIN']['MAX_ATTEMPTS']:
                 raise ValueError("Too many login attempts. Please try again later.")
 
             try:
@@ -185,18 +188,18 @@ class AuthenticationService:
             user.save()
 
             # Check for suspicious activity
-            try:
-                fraud_check = ServiceNotifier.check_login_security({
-                    'user_id': user.id,
-                    'ip_address': ip_address,
-                    'user_agent': request_data.get('user_agent'),
-                    'device_id': request_data.get('device_id')
-                })
+            # try:
+            #     fraud_check = ServiceNotifier.notify_security_event({
+            #         'user_id': user.id,
+            #         'ip_address': ip_address,
+            #         'user_agent': request_data.get('user_agent'),
+            #         'device_id': request_data.get('device_id')
+            #     })
                 
-                if fraud_check.get('risk_level') == 'HIGH':
-                    raise ValueError("Login blocked for security reasons")
-            except Exception as e:
-                logger.error(f"Fraud check error: {str(e)}")
+            #     if fraud_check.get('risk_level') == 'HIGH':
+            #         raise ValueError("Login blocked for security reasons")
+            # except Exception as e:
+            #     logger.error(f"Fraud check error: {str(e)}")
 
             return user
 
@@ -252,7 +255,7 @@ class AuthenticationService:
         cache.incr(rate_limit_key)
         cache.expire(
             rate_limit_key, 
-            settings.SECURITY_CONFIG['LOGIN_ATTEMPT_WINDOW']
+            settings.SECURITY_CONFIG['LOGIN']['MAX_ATTEMPTS']
         )
 
     @staticmethod
@@ -264,7 +267,7 @@ class AuthenticationService:
 
         AuthenticationService._handle_failed_attempt(rate_limit_key)
 
-        if user.failed_login_attempts >= settings.SECURITY_CONFIG['MAX_LOGIN_ATTEMPTS']:
+        if user.failed_login_attempts >= settings.SECURITY_CONFIG['LOGIN']['MAX_ATTEMPTS']:
             user.status = User.Status.LOCKED
             user.save()
 

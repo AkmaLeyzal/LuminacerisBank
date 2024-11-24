@@ -112,6 +112,8 @@ class EmailTemplateService:
                 f'email/{template_name}.html',
                 context
             )
+
+            print(context)
             text_content = strip_tags(html_content)
 
             # Add default tags
@@ -190,5 +192,5 @@ class AuthEmailService:
         except Exception as e:
             logger.error(f"Failed to send password reset email: {str(e)}")
             return False
-        
-        
+            
+               
