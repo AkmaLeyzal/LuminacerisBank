@@ -20,6 +20,7 @@ RUN pip install --force-reinstall gunicorn
 RUN ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 COPY . .
+COPY ../../../kafka_cloud /LuminacerisBank/kafka_cloud
 
 RUN python manage.py collectstatic --noinput
 
@@ -46,7 +47,8 @@ RUN pip install --upgrade pip && \
     ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 COPY --from=build /LuminacerisBank/microservices/services/auth_service /LuminacerisBank/microservices/services/auth_service
+COPY --from=build /LuminacerisBank/kafka_cloud /LuminacerisBank/kafka_cloud
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "auth_service.wsgi:application", "--workers", "3", "--timeout", "60"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8001", "auth_service.wsgi:application", "--workers", "3", "--timeout", "60"]

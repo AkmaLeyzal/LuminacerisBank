@@ -87,6 +87,9 @@ DATABASES = {
         'PASSWORD': os.getenv('AUTH_DB_PASSWORD'),
         'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
+        'OPTIONS': {
+            'connect_timeout': 30
+        }
     }
 }
 
@@ -101,6 +104,19 @@ AUTH_PASSWORD_VALIDATORS = [
 REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = 14028
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+
+# import redis
+
+# r = redis.Redis(
+#   host=REDIS_HOST,
+#   port=14028,
+#   password=REDIS_PASSWORD)
+
+# try:
+#   r.ping()
+#   print("Successfully connected to Redis")
+# except redis.exceptions.ConnectionError as e:
+#   print(f"Failed to connect to Redis: {e}")
 
 CACHES = {
     "default": {
@@ -246,8 +262,6 @@ SECURITY_CONFIG = {
         'VERIFY_NEW_DEVICES': False,
     }
 }
-
-print(SECURITY_CONFIG['LOGIN']['MAX_ATTEMPTS'])
 
 # FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 FRONTEND_URL = 'http://localhost:8001/api/auth'
@@ -398,7 +412,7 @@ KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
 
 # Internationalization settings
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jakarta'
 USE_I18N = True
 USE_TZ = True
 

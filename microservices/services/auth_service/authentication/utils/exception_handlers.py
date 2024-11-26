@@ -3,6 +3,8 @@
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 from rest_framework import status
+from django.db import OperationalError
+from redis.exceptions import TimeoutError as RedisTimeoutError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,9 +19,22 @@ def custom_exception_handler(exc, context):
     if response is None:
         # Jika tidak ada response dari handler default
         logger.error(f"Unhandled exception: {str(exc)}")
-        response = Response({
-            'error': 'Internal server error occurred.'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Penanganan khusus untuk exception "Timeout reading from socket"
+        if isinstance(exc, OperationalError) and 'Timeout reading from socket' in str(exc):
+            logger.error("Database connection timeout")
+            response = Response({
+                'error': 'Database connection timeout. Please try again later.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        elif isinstance(exc, RedisTimeoutError):
+            logger.error("Redis connection timeout")
+            response = Response({
+                'error': 'Cache server connection timeout. Please try again later.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            response = Response({
+                'error': 'Internal server error occurred.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # Standarisasi format response error
     if response is not None and response.data:

@@ -167,7 +167,7 @@ class LogoutView(APIView):
                 reason="User logout",
                 blacklisted_by="user"
             )
-
+            
             # Invalidate user session
             UserSession.objects.filter(
                 user_id=request.user.id,

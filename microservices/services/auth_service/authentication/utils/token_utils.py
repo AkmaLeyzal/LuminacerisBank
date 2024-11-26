@@ -1,7 +1,8 @@
 # authentication/utils/token_utils.py
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from django.conf import settings
+from django.utils import timezone
 from django.core.cache import cache
 from typing import Dict, Optional
 import jwt
@@ -23,7 +24,7 @@ class TokenManager:
             'user_id': user_id,
             'jti': access_token_id,
             'user_data': user_data,
-            'exp': datetime.utcnow() + timedelta(minutes=30)
+            'exp': timezone.now() + timedelta(minutes=30)
         }
         
         # Refresh token payload
@@ -31,7 +32,7 @@ class TokenManager:
             'token_type': 'refresh',
             'user_id': user_id,
             'jti': refresh_token_id,
-            'exp': datetime.utcnow() + timedelta(days=7)
+            'exp': timezone.now() + timedelta(days=7)
         }
         
         # Generate JWT tokens
@@ -66,7 +67,7 @@ class TokenManager:
         cache.set(
             cache_key,
             payload,
-            timeout=int((payload['exp'] - datetime.utcnow()).total_seconds())
+            timeout=int((payload['exp'] - timezone.now()).total_seconds())
         )
 
     @staticmethod
@@ -125,7 +126,7 @@ class TokenManager:
                 'user_id': user_id,
                 'jti': access_token_id,
                 'user_data': user_data,
-                'exp': datetime.utcnow() + timedelta(minutes=30)
+                'exp': timezone.now() + timedelta(minutes=30)
             }
             
             access_token = jwt.encode(
@@ -159,7 +160,7 @@ class TokenBlacklistManager:
             user_id=user_id,
             blacklist_reason=reason,
             blacklisted_by=blacklisted_by,
-            expires_at=datetime.utcnow() + timedelta(days=7)
+            expires_at=timezone.now() + timedelta(days=7)
         )
         
         # Add to cache
@@ -167,3 +168,16 @@ class TokenBlacklistManager:
         cache.set(cache_key, True, timeout=7*24*60*60)  # 7 days
         
         return True
+    
+    @staticmethod
+    def is_blacklisted(token_jti: str) -> bool:
+        """Check if token is blacklisted"""
+        cache_key = f'blacklist:{token_jti}'
+        is_blacklisted = cache.get(cache_key)
+        
+        if is_blacklisted is None:
+            from authentication.models import TokenBlacklist
+            is_blacklisted = TokenBlacklist.objects.filter(token_jti=token_jti).exists()
+            cache.set(cache_key, is_blacklisted, timeout=7*24*60*60)  # 7 days
+        
+        return is_blacklisted

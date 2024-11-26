@@ -3,9 +3,10 @@
 from django.core.cache import cache
 from django.conf import settings
 from django.utils import timezone
+import pytz
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Dict, Tuple, Optional
 import secrets
 import logging
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 kafka_producer = KafkaProducer()
 email_service = AuthEmailService()
 cache_service = CacheService()
+timezone.activate(pytz.timezone('Asia/Jakarta'))
 
 class RegistrationService:
     @staticmethod
@@ -73,7 +75,7 @@ class RegistrationService:
                     "event_type": "USER_REGISTERED",
                     "user_id": user.id,
                     "email": user.email,
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": timezone.now().isoformat()
                 }
             )
 
@@ -114,7 +116,7 @@ class RegistrationService:
                     "event_type": "EMAIL_VERIFIED",
                     "user_id": user.id,
                     "email": user.email,
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": timezone.now().isoformat()
                 }
             )
 
@@ -232,7 +234,7 @@ class AuthenticationService:
         SessionCache.store_session(
             str(session.session_id),
             session_data,
-            timeout=7*24*60*60
+            expires_in=7*24*60*60
         )
 
         # Log security audit
@@ -371,7 +373,7 @@ class PasswordService:
                 value={
                     "event_type": "PASSWORD_RESET",
                     "user_id": user.id,
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": timezone.now().isoformat()
                 }
             )
 

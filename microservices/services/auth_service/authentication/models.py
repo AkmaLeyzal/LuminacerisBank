@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 import jwt
 import uuid
+import pytz
+
+timezone.activate(pytz.timezone('Asia/Jakarta'))
 
 class Role(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -37,10 +40,10 @@ class User(AbstractUser):
     
     # Security fields
     last_login_ip = models.GenericIPAddressField(null=True)
-    last_login_date = models.DateTimeField(null=True)
+    last_login_date = models.DateTimeField(default=timezone.now, null=True)
     failed_login_attempts = models.IntegerField(default=0)
-    last_failed_login = models.DateTimeField(null=True)
-    password_changed_at = models.DateTimeField(null=True)
+    last_failed_login = models.DateTimeField(default=timezone.now, null=True)
+    password_changed_at = models.DateTimeField(default=timezone.now, null=True)
     
     # Verification fields
     is_email_verified = models.BooleanField(default=False)
@@ -56,10 +59,10 @@ class User(AbstractUser):
     
     # Blocking fields
     is_blocked = models.BooleanField(default=False)
-    blocked_at = models.DateTimeField(null=True, blank=True)
+    blocked_at = models.DateTimeField(default=timezone.now, null=True, blank=True)
     block_reason = models.TextField(null=True, blank=True)
     blocked_by = models.CharField(max_length=50, null=True, blank=True)
-    block_expires_at = models.DateTimeField(null=True, blank=True)
+    block_expires_at = models.DateTimeField(default=timezone.now, null=True, blank=True)
     
     # Preferences
     preferred_language = models.CharField(max_length=20, default='en')
@@ -68,7 +71,7 @@ class User(AbstractUser):
     # Metadata
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-    last_activity = models.DateTimeField(null=True, blank=True)
+    last_activity = models.DateTimeField(default=timezone.now, null=True, blank=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
@@ -104,7 +107,7 @@ class User(AbstractUser):
             'roles': [role.role_name for role in self.roles.all()],
             'permissions': self.get_all_permissions(),
             'jti': access_token_id,
-            'exp': datetime.utcnow() + timedelta(minutes=30)
+            'exp': timezone.now() + timedelta(minutes=30)
         }
         
         # Refresh token payload
@@ -112,7 +115,7 @@ class User(AbstractUser):
             'token_type': 'refresh',
             'user_id': self.id,
             'jti': refresh_token_id,
-            'exp': datetime.utcnow() + timedelta(days=7)
+            'exp': timezone.now() + timedelta(days=7)
         }
         
         # Generate tokens
@@ -144,7 +147,7 @@ class User(AbstractUser):
         cache.set(
             key=cache_key,
             value=payload,
-            timeout=int((payload['exp'] - datetime.utcnow()).total_seconds())
+            timeout=int((payload['exp'] - timezone.now()).total_seconds())
         )
 
 class TokenBlacklist(models.Model):
@@ -155,7 +158,7 @@ class TokenBlacklist(models.Model):
     blacklist_reason = models.TextField()
     metadata = models.JSONField(default=dict)
     blacklisted_at = models.DateTimeField(default=timezone.now)
-    expires_at = models.DateTimeField()
+    expires_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = 'token_blacklist'
@@ -172,7 +175,7 @@ class TokenBlacklist(models.Model):
         cache.set(
             key=cache_key,
             value='blacklisted',
-            timeout=int((self.expires_at - datetime.utcnow()).total_seconds())
+            timeout=int((self.expires_at - timezone.now()).total_seconds())
         )
 
 class UserSession(models.Model):
@@ -191,7 +194,7 @@ class UserSession(models.Model):
     
     is_active = models.BooleanField(default=True)
     last_activity = models.DateTimeField(auto_now=True)
-    expires_at = models.DateTimeField()
+    expires_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
@@ -216,7 +219,7 @@ class UserSession(models.Model):
         cache.set(
             key=cache_key,
             value=session_data,
-            timeout=int((self.expires_at - datetime.utcnow()).total_seconds())
+            timeout=int((self.expires_at - timezone.now()).total_seconds())
         )
 
 class SecurityAuditLog(models.Model):
