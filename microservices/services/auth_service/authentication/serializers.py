@@ -112,3 +112,42 @@ class TokenRefreshSerializer(serializers.Serializer):
 class TokenRefreshResponseSerializer(serializers.Serializer):
     access_token = serializers.CharField()
     expires_in = serializers.IntegerField()
+
+class UserVerificationStatusSerializer(serializers.ModelSerializer):
+    """Serializer for user verification status"""
+    is_verified = serializers.SerializerMethodField()
+    verification_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'username', 'status', 
+            'is_verified', 'verification_status',
+            'is_email_verified', 'is_phone_verified',
+            'last_login_ip', 'last_login_date',
+            'roles', 'created_at'
+        ]
+        read_only_fields = fields
+
+    def get_is_verified(self, obj):
+        """Check if user is fully verified"""
+        return obj.is_email_verified and obj.status == User.Status.ACTIVE
+
+    def get_verification_status(self, obj):
+        """Get detailed verification status"""
+        status = {
+            'email': obj.is_email_verified,
+            'phone': obj.is_phone_verified,
+            'account': obj.status == User.Status.ACTIVE,
+            'required_steps': []
+        }
+
+        # Add required verification steps
+        if not obj.is_email_verified:
+            status['required_steps'].append('EMAIL_VERIFICATION')
+        if not obj.is_phone_verified:
+            status['required_steps'].append('PHONE_VERIFICATION')
+        if obj.status != User.Status.ACTIVE:
+            status['required_steps'].append('ACCOUNT_ACTIVATION')
+
+        return status

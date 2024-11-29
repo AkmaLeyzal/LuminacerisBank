@@ -27,6 +27,7 @@ class User(AbstractUser):
         BLOCKED = 'BLOCKED', 'Blocked'
         PENDING = 'PENDING', 'Pending Verification'
     
+    user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=50, unique=True)
     full_name = models.CharField(max_length=255, blank=True)
@@ -152,7 +153,7 @@ class User(AbstractUser):
 
 class TokenBlacklist(models.Model):
     token_jti = models.CharField(max_length=255, unique=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column='user_id', to_field='user_id')
     token_type = models.CharField(max_length=50)  # ACCESS/REFRESH
     blacklisted_by = models.CharField(max_length=50)
     blacklist_reason = models.TextField()
@@ -180,7 +181,7 @@ class TokenBlacklist(models.Model):
 
 class UserSession(models.Model):
     session_id = models.UUIDField(primary_key=True, default=uuid.uuid4)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column='user_id', to_field='user_id')
     refresh_token_jti = models.CharField(max_length=255)
     access_token_jti = models.CharField(max_length=255)
     
@@ -223,7 +224,7 @@ class UserSession(models.Model):
         )
 
 class SecurityAuditLog(models.Model):
-    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    user = models.ForeignKey('User', on_delete=models.CASCADE, db_column='user_id', to_field='user_id')
     event_type = models.CharField(max_length=50)
     ip_address = models.GenericIPAddressField()
     user_agent = models.CharField(max_length=255)
@@ -238,7 +239,7 @@ class SecurityAuditLog(models.Model):
         ]
 
 class UserRole(models.Model):
-    user = models.ForeignKey('User', on_delete=models.CASCADE)
+    user = models.ForeignKey('User', on_delete=models.CASCADE , db_column='user_id', to_field='user_id')
     role = models.ForeignKey('Role', on_delete=models.CASCADE)
     assigned_by = models.CharField(max_length=50)
     assigned_at = models.DateTimeField(default=timezone.now)

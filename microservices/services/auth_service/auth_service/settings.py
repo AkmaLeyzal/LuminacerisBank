@@ -17,6 +17,16 @@ if not os.getenv('DOCKER_CONTAINER'):
 # Secret key for Django, fetched from environment variables for security
 SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE', 'default_secret_key')
 
+# Service Authentication
+SERVICE_AUTH_KEY = os.getenv('SERVICE_AUTH_KEY', 'your-secure-service-key')
+
+# Service Verification Settings
+VERIFICATION_REQUIREMENTS = {
+    'EMAIL_REQUIRED': True,
+    'PHONE_REQUIRED': False,
+    'KYC_REQUIRED': False,
+}
+
 # Debug mode
 # DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
 DEBUG = 'True'
@@ -399,7 +409,8 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'x-api-key',
     'cache-control',
-    'pragma'
+    'pragma',
+    'Service-Auth-Key',
 ]
 
 CORS_EXPOSE_HEADERS = [
@@ -408,7 +419,12 @@ CORS_EXPOSE_HEADERS = [
     'X-CSRFToken',
 ]
 
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('CONFLUENT_BOOTSTRAP_SERVERS')
+KAFKA_SECURITY_PROTOCOL = "SASL_SSL"
+KAFKA_SASL_MECHANISMS = "PLAIN"
+KAFKA_SASL_USERNAME = os.getenv('CONFLUENT_SASL_USERNAME')
+KAFKA_SASL_PASSWORD = os.getenv('CONFLUENT_SASL_PASSWORD')
 
 # Internationalization settings
 LANGUAGE_CODE = 'en-us'
@@ -479,6 +495,19 @@ LOGGING = {
         },
     }
 }
+
+# Service URLs
+AUTH_SERVICE_URL = 'http://localhost:8001'
+USER_MANAGEMENT_SERVICE_URL = 'http://localhost:8002'
+ACCOUNT_SERVICE_URL = 'http://localhost:8003'
+TRANSACTION_SERVICE_URL = 'http://localhost:8004'
+PAYMENT_SERVICE_URL = 'http://localhost:8005'
+CARD_MANAGEMENT_SERVICE_URL = 'http://localhost:8006'
+LOAN_SERVICE_URL = 'http://localhost:8007'
+NOTIFICATION_SERVICE_URL = 'http://localhost:8008'
+AUDIT_SERVICE_URL = 'http://localhost:8009'
+FRAUD_DETECTION_SERVICE_URL = 'http://localhost:8010'
+SUPPORT_SERVICE_URL = 'http://localhost:8011'
 
 # Ensure logs directory exists
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')

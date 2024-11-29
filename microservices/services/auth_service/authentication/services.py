@@ -33,7 +33,7 @@ class RegistrationService:
             # Create user with pending status
             user = User.objects.create_user(
                 username=data['username'],
-                email=data['email'].lower(),
+                email=data['email'],
                 password=data['password'],
                 full_name=data['full_name'],
                 phone_number=data.get('phone_number'),
@@ -59,7 +59,7 @@ class RegistrationService:
 
             # Notify other services
             user_data = {
-                'id': user.id,
+                'id': user.user_id,
                 'email': user.email,
                 'username': user.username,
                 'full_name': user.full_name,
@@ -70,10 +70,10 @@ class RegistrationService:
             # Produce Kafka event
             kafka_producer.produce(
                 topic=KafkaTopics.USER_EVENTS,
-                key=str(user.id),
+                key=str(user.user_id),
                 value={
                     "event_type": "USER_REGISTERED",
-                    "user_id": user.id,
+                    "user_id": user.user_id,
                     "email": user.email,
                     "timestamp": timezone.now().isoformat()
                 }
@@ -111,10 +111,10 @@ class RegistrationService:
             # Produce Kafka event
             kafka_producer.produce(
                 topic=KafkaTopics.USER_EVENTS,
-                key=str(user.id),
+                key=str(user.user_id),
                 value={
                     "event_type": "EMAIL_VERIFIED",
-                    "user_id": user.id,
+                    "user_id": user.user_id,
                     "email": user.email,
                     "timestamp": timezone.now().isoformat()
                 }
@@ -226,7 +226,7 @@ class AuthenticationService:
 
         # Cache session data
         session_data = {
-            'user_id': user.id,
+            'user_id': user.user_id,
             'access_token_jti': tokens['access_token_id'],
             'device_id': request_data.get('device_id'),
             'is_active': True
@@ -274,7 +274,7 @@ class AuthenticationService:
             user.save()
 
             ServiceNotifier.notify_security_event(
-                user_id=user.id,
+                user_id=user.user_id,
                 event_type='ACCOUNT_LOCKED',
                 details={'reason': 'Too many failed login attempts'}
             )
@@ -355,7 +355,7 @@ class PasswordService:
 
             # Clear all related cache
             cache_service.delete(token_key)
-            SessionCache.invalidate_session(str(user.id))
+            SessionCache.invalidate_session(str(user.user_id))
 
             # Log security audit
             SecurityAuditLog.objects.create(
@@ -369,10 +369,10 @@ class PasswordService:
             # Produce Kafka event
             kafka_producer.produce(
                 topic=KafkaTopics.SECURITY_EVENTS,
-                key=str(user.id),
+                key=str(user.user_id),
                 value={
                     "event_type": "PASSWORD_RESET",
-                    "user_id": user.id,
+                    "user_id": user.user_id,
                     "timestamp": timezone.now().isoformat()
                 }
             )
@@ -434,7 +434,7 @@ class SecurityService:
             UserSession.objects.filter(user=user).update(is_active=False)
 
             # Clear user's cache
-            cache_service.delete(f"user_permissions:{user.id}")
+            cache_service.delete(f"user_permissions:{user.user_id}")
 
             # Log security audit
             SecurityAuditLog.objects.create(

@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from .serializers import (
     UserRegistrationSerializer,
     LoginSerializer,
@@ -14,7 +15,8 @@ from .serializers import (
     PasswordResetSerializer,
     TokenRefreshSerializer,
     UserResponseSerializer,
-    LoginResponseSerializer
+    LoginResponseSerializer,
+    UserVerificationStatusSerializer
 )
 from .services import (
     RegistrationService,
@@ -339,3 +341,81 @@ class TokenRefreshView(APIView):
                 )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UserVerificationStatusView(APIView):
+    """View for checking user verification status"""
+    
+    def get_permissions(self):
+        """
+        Allow access to microservices using service authentication
+        or regular authenticated users for self-check
+        """
+        if 'Service-Auth-Key' in self.request.headers:
+            return []
+        return [IsAuthenticated()]
+
+    def get(self, request, user_id=None):
+        try:
+            # Check if request is from a microservice
+            service_auth_key = request.headers.get('Service-Auth-Key')
+            is_service_request = service_auth_key == settings.SERVICE_AUTH_KEY
+
+            # If it's a service request, allow checking any user
+            # If it's a user request, only allow checking self
+            if is_service_request:
+                user = get_object_or_404(User, id=user_id)
+            else:
+                # Regular users can only check their own status
+                if str(request.user.id) != str(user_id):
+                    return Response(
+                        {'error': 'Not authorized to view this user\'s status'},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                user = request.user
+
+            serializer = UserVerificationStatusSerializer(user)
+            return Response(serializer.data)
+
+        except Exception as e:
+            logger.error(f"Error checking user verification status: {str(e)}")
+            return Response(
+                {'error': 'Failed to retrieve verification status'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class ServiceUserVerificationView(APIView):
+    """Internal API for microservices to verify users"""
+
+    def get(self, request, user_id):
+        try:
+            # Verify service authentication
+            service_auth_key = request.headers.get('Service-Auth-Key')
+            if not service_auth_key or service_auth_key != settings.SERVICE_AUTH_KEY:
+                return Response(
+                    {'error': 'Invalid service authentication'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
+            # Get user and verification status
+            user = get_object_or_404(User, id=user_id)
+            serializer = UserVerificationStatusSerializer(user)
+
+            # Add additional service-specific information
+            response_data = serializer.data
+            response_data.update({
+                'service_verification': {
+                    'is_eligible_for_services': user.status == User.Status.ACTIVE,
+                    'verified_at': user.updated_at.isoformat() if user.is_email_verified else None,
+                    'user_type': 'PERSONAL',  # You might want to make this dynamic
+                    'kyc_status': 'VERIFIED' if user.is_email_verified else 'PENDING'
+                }
+            })
+
+            return Response(response_data)
+
+        except Exception as e:
+            logger.error(f"Error in service verification: {str(e)}")
+            return Response(
+                {'error': 'Internal service error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )    

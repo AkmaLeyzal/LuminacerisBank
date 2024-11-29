@@ -9,7 +9,9 @@ from .views import (
     PasswordResetRequestView,
     VerifyOTPView,
     PasswordResetView,
-    TokenRefreshView
+    TokenRefreshView,
+    UserVerificationStatusView,
+    ServiceUserVerificationView
 )
 
 app_name = 'authentication'
@@ -23,4 +25,13 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('password-reset/', PasswordResetView.as_view(), name='password-reset'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+
+    path('users/<int:user_id>/verification-status/', 
+         UserVerificationStatusView.as_view(), 
+         name='user-verification-status'),
+    
+    # Internal service endpoint
+    path('internal/users/<int:user_id>/verify/', 
+         ServiceUserVerificationView.as_view(), 
+         name='service-user-verification'),
 ]

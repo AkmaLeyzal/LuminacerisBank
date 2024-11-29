@@ -3,9 +3,11 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 import uuid
+import pytz
 import logging
 
 logger = logging.getLogger(__name__)
+timezone.activate(pytz.timezone('Asia/Jakarta'))
 
 class TimestampedModel(models.Model):
     """Abstract base class with timestamp fields"""
