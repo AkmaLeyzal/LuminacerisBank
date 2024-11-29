@@ -1,8 +1,15 @@
-# services/user_management_service/userprofile/urls.py
+# urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import UserProfileViewSet, UserDocumentViewSet
 
-from django.urls import path
-from .views import UserProfileView
+router = DefaultRouter()
+router.register(r'profiles', UserProfileViewSet)
+router.register(r'documents', UserDocumentViewSet)
 
 urlpatterns = [
-    path('profile/', UserProfileView.as_view(), name='user_profile'),
+    path('', include(router.urls)),
+    # Custom endpoints for user-specific operations
+    path('users/<int:user_id>/profile/', 
+         UserProfileViewSet.as_view({'post': 'create', 'get': 'retrieve'})),
 ]
