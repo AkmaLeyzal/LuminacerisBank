@@ -1,52 +1,47 @@
-# kafka_cloud/producer.py
-
+#luminacerisBank/kafka/producer.py
 from confluent_kafka import Producer
 from .config import KafkaConfig
 import json
 import logging
-from typing import Dict, Optional
+import uuid
 
 logger = logging.getLogger(__name__)
 
 class KafkaProducer:
     def __init__(self):
         self.producer = Producer(KafkaConfig.get_config())
-        self._ensure_topics_exist()
 
-    def _ensure_topics_exist(self):
-        """Ensure all required topics exist"""
-        # Implementation depends on your Kafka setup
-        pass
-
-    def produce(self, topic: str, value: Dict, key: Optional[str] = None, headers: Optional[Dict] = None) -> bool:
-        """Produce message to Kafka topic"""
+    def produce(self, topic: str, value: dict, key: str = None):
         try:
-            # Convert value to JSON string
-            value_json = json.dumps(value)
+            # Convert the message to JSON-serializable format
+            serializable_value = self._prepare_message(value)
             
-            # Prepare headers if provided
-            kafka_headers = [(k, str(v).encode('utf-8')) for k, v in (headers or {}).items()]
-
-            # Produce message
             self.producer.produce(
                 topic=topic,
                 key=key.encode('utf-8') if key else None,
-                value=value_json.encode('utf-8'),
-                headers=kafka_headers if kafka_headers else None,
-                on_delivery=self._delivery_callback
+                value=json.dumps(serializable_value).encode('utf-8'),
+                callback=self._delivery_report
             )
-
-            # Flush producer
             self.producer.flush()
-            return True
-
         except Exception as e:
-            logger.error(f"Failed to produce message to {topic}: {str(e)}")
-            return False
+            logger.error(f'Error producing message: {str(e)}')
+            raise
 
-    def _delivery_callback(self, err, msg):
-        """Callback for message delivery reports"""
-        if err:
-            logger.error(f'Message delivery failed: {str(err)}')
+    def _prepare_message(self, value: dict) -> dict:
+        """Prepare message for serialization"""
+        def serialize_value(v):
+            if isinstance(v, uuid.UUID):
+                return str(v)
+            elif isinstance(v, dict):
+                return {k: serialize_value(v) for k, v in v.items()}
+            elif isinstance(v, list):
+                return [serialize_value(item) for item in v]
+            return v
+
+        return {k: serialize_value(v) for k, v in value.items()}
+
+    def _delivery_report(self, err, msg):
+        if err is not None:
+            logger.error(f'Message delivery failed: {err}')
         else:
-            logger.debug(f'Message delivered to {msg.topic()} [{msg.partition()}] @ {msg.offset()}')
+            logger.debug(f'Message delivered to {msg.topic()} [{msg.partition()}]')

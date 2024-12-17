@@ -6,6 +6,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from rest_framework_simplejwt.tokens import AccessToken
+from jwt.exceptions import InvalidTokenError
+import jwt
 from .serializers import (
     UserRegistrationSerializer,
     LoginSerializer,
@@ -23,7 +26,7 @@ from .services import (
     AuthenticationService,
     PasswordService
 )
-from .models import UserSession
+from .models import UserSession, User
 from .utils.token_utils import TokenManager, TokenBlacklistManager
 from .utils.jwt import generate_jwt_payload, get_token_from_request
 import logging
@@ -45,7 +48,7 @@ class RegisterView(APIView):
 
                 # Generate JWT tokens
                 user_data = generate_jwt_payload(user)
-                tokens = TokenManager.generate_tokens(user.id, user_data)
+                tokens = TokenManager.generate_tokens(str(user.id), user_data)
 
                 # Prepare response
                 user_serializer = UserResponseSerializer(user)
@@ -110,7 +113,7 @@ class LoginView(APIView):
 
                 # Generate JWT tokens
                 user_data = generate_jwt_payload(user)
-                tokens = TokenManager.generate_tokens(user.id, user_data)
+                tokens = TokenManager.generate_tokens(str(user.id), user_data)
 
                 # Create user session
                 AuthenticationService.create_session(user, tokens, request_data)
@@ -366,7 +369,7 @@ class UserVerificationStatusView(APIView):
                 user = get_object_or_404(User, id=user_id)
             else:
                 # Regular users can only check their own status
-                if str(request.user.id) != str(user_id):
+                if str(request.user.user_id) != str(user_id):
                     return Response(
                         {'error': 'Not authorized to view this user\'s status'},
                         status=status.HTTP_403_FORBIDDEN
@@ -419,3 +422,52 @@ class ServiceUserVerificationView(APIView):
                 {'error': 'Internal service error'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )    
+        
+class TokenVerifyView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        token = request.data.get('token') or request.headers.get('Authorization', '').split(' ')[1]
+        
+        if not token:
+            return Response(
+                {'error': 'Token is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Decode and verify token
+            decoded_token = jwt.decode(
+                token,
+                settings.JWT_SECRET_KEY,
+                algorithms=['HS256']
+            )
+
+            # Get user from token
+            user_id = decoded_token.get('user_id')
+            if not user_id:
+                raise InvalidTokenError('Invalid token payload')
+
+            return Response({
+                'status': 'success',
+                'user_id': user_id,
+                'token_type': decoded_token.get('token_type'),
+                'exp': decoded_token.get('exp')
+            })
+
+        except InvalidTokenError as e:
+            return Response(
+                {
+                    'error': 'Token verification failed',
+                    'detail': str(e)
+                },
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        except Exception as e:
+            return Response(
+                {
+                    'error': 'Token verification failed',
+                    'detail': str(e)
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )

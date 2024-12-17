@@ -11,27 +11,32 @@ from .views import (
     PasswordResetView,
     TokenRefreshView,
     UserVerificationStatusView,
-    ServiceUserVerificationView
+    ServiceUserVerificationView,
+    TokenVerifyView
 )
 
 app_name = 'authentication'
 
 urlpatterns = [
-    path('register/', RegisterView.as_view(), name='register'),
-    path('login/', LoginView.as_view(), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
-    path('verify-email/', EmailVerificationView.as_view(), name='verify-email'),
-    path('password-reset-request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
-    path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
-    path('password-reset/', PasswordResetView.as_view(), name='password-reset'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    path('api/auth/register/', RegisterView.as_view(), name='register'),
+    path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/auth/logout/', LogoutView.as_view(), name='logout'),
+    path('api/auth/verify-email/', EmailVerificationView.as_view(), name='verify-email'),
+    path('api/auth/password-reset-request/', PasswordResetRequestView.as_view(), name='password-reset-request'),
+    path('api/auth/verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
+    path('api/auth/password-reset/', PasswordResetView.as_view(), name='password-reset'),
+    path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 
-    path('users/<int:user_id>/verification-status/', 
+    path('api/auth/users/<int:user_id>/verification-status/', 
          UserVerificationStatusView.as_view(), 
          name='user-verification-status'),
     
     # Internal service endpoint
-    path('internal/users/<int:user_id>/verify/', 
+    path('api/auth/internal/users/<uuid:user_id>/verify/', 
          ServiceUserVerificationView.as_view(), 
          name='service-user-verification'),
+
+    path('api/auth/token/verify/', 
+         TokenVerifyView.as_view(), 
+         name='token-verify'),
 ]

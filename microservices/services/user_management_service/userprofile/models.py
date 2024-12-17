@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+import uuid
+from .utils.validators import validate_full_name, validate_phone_number, validate_tax_number
 
 class UserProfile(models.Model):
     class Gender(models.TextChoices):
@@ -9,22 +11,31 @@ class UserProfile(models.Model):
         OTHER = 'OTHER', 'Other'
         PREFER_NOT_TO_SAY = 'PREFER_NOT_TO_SAY', 'Prefer not to say'
 
-    profile_id = models.AutoField(primary_key=True)
-    user_id = models.IntegerField(unique=True)
-    full_name = models.CharField(max_length=255)
+    profile_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_id = models.UUIDField(unique=True)
+    full_name = models.CharField(
+        max_length=255,
+        validators=[validate_full_name]
+    )
+    tax_number = models.CharField(
+        max_length=50,
+        unique=True,
+        validators=[validate_tax_number]
+    )
+    phone_number = models.CharField(
+        max_length=20,
+        validators=[validate_phone_number]
+    )
     birth_date = models.DateField()
     gender = models.CharField(
         max_length=20,
         choices=Gender.choices,
         default=Gender.PREFER_NOT_TO_SAY
     )
-    tax_number = models.CharField(max_length=50, unique=True)
-    phone_number = models.CharField(max_length=20)
     occupation = models.CharField(max_length=100)
     monthly_income = models.DecimalField(
         max_digits=15,
-        decimal_places=2,
-        validators=[MinValueValidator(0)]
+        decimal_places=2
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

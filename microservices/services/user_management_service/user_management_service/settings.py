@@ -1,10 +1,15 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import sys
+
+APPEND_SLASH = False
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BASE_DIR.parent.parent.parent
+
+sys.path.append(str(ROOT_DIR))
 
 if not os.getenv('DOCKER_CONTAINER'):
     from dotenv import load_dotenv
@@ -14,8 +19,8 @@ if not os.getenv('DOCKER_CONTAINER'):
 SECRET_KEY = os.getenv('SECRET_KEY_USER_SERVICE', 'default_secret_key')
 
 # Debug mode
-DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
-# DEBUG = 'True'
+# DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+DEBUG = 'True'
 
 # Allowed hosts
 ALLOWED_HOSTS = ['*']
@@ -37,6 +42,8 @@ INSTALLED_APPS = [
 # Middleware configuration including CORS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
+    # 'user_management.middleware.JWTAuthenticationMiddleware',
+    # 'user_management.middleware.rate_limit.RateLimitMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -78,6 +85,9 @@ DATABASES = {
         'PASSWORD': os.getenv('USER_DB_PASSWORD'),
         'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT', '5432'),
+        'OPTIONS': {
+            'connect_timeout': 30
+        }
     }
 }
 
@@ -89,25 +99,26 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = 14028
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"redis://redis-14028.c334.asia-southeast2-1.gce.redns.redis-cloud.com:{REDIS_PORT}/0",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "PASSWORD": os.getenv('REDIS_PASSWORD'),
+            "PASSWORD": REDIS_PASSWORD,
             "SOCKET_CONNECT_TIMEOUT": 5,
             "SOCKET_TIMEOUT": 5,
             "RETRY_ON_TIMEOUT": True,
             "CONNECTION_POOL_KWARGS": {
                 "max_connections": 20,  # Reduce for small scale
-                "timeout": 5
             },
             "SERIALIZER": "django_redis.serializers.json.JSONSerializer",
         },
-        "KEY_PREFIX": "auth"  # Prefix untuk menghindari konflik
+        "KEY_PREFIX": "user_management"  # Prefix untuk menghindari konflik
     }
 }
 
@@ -147,6 +158,9 @@ RATE_LIMIT = {
         'WINDOW': 60  # 1 minute
     }
 }
+
+JWT_SECRET_KEY = os.getenv('SECRET_KEY_USER_SERVICE')
+JWT_REFRESH_SECRET_KEY = os.getenv('SECRET_KEY_USER_SERVICE')
 
 # JWT settings
 SIMPLE_JWT = {
@@ -199,21 +213,21 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8011",   # Support Service
     # Frontend origins
     "http://localhost:3000",   # React development
-    "http://localhost/login_page",
-    "http://localhost/home_page",
-    "http://localhost/cardManagement_page",
-    "http://localhost/fraudAlert_page",
-    "http://localhost/history_page",
-    "http://localhost/loan_page",
-    "http://localhost/notificationCenter_page",
-    "http://localhost/paymentService_page",
-    "http://localhost/profileSetting_page",
-    "http://localhost/support_page",
-    "http://localhost/transfer_page",
+    # "http://localhost/login_page",
+    # "http://localhost/home_page",
+    # "http://localhost/cardManagement_page",
+    # "http://localhost/fraudAlert_page",
+    # "http://localhost/history_page",
+    # "http://localhost/loan_page",
+    # "http://localhost/notificationCenter_page",
+    # "http://localhost/paymentService_page",
+    # "http://localhost/profileSetting_page",
+    # "http://localhost/support_page",
+    # "http://localhost/transfer_page",
 ]
 
 # Additional CORS settings
-# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -239,11 +253,16 @@ CORS_ALLOW_HEADERS = [
     'pragma'
 ]
 
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('CONFLUENT_BOOTSTRAP_SERVERS')
+KAFKA_SECURITY_PROTOCOL = "SASL_SSL"
+KAFKA_SASL_MECHANISMS = "PLAIN"
+KAFKA_SASL_USERNAME = os.getenv('CONFLUENT_SASL_USERNAME')
+KAFKA_SASL_PASSWORD = os.getenv('CONFLUENT_SASL_PASSWORD')
 
 # Internationalization settings
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jakarta'
 USE_I18N = True
 USE_TZ = True
 
@@ -259,16 +278,79 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(name)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+            'level': 'DEBUG',
         },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'auth_service.log'),
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'INFO',
+        }
     },
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file'],
         'level': 'INFO',
     },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'authentication': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    }
 }
+
+# Service URLs
+AUTH_SERVICE_URL = 'http://localhost:8001'
+USER_MANAGEMENT_SERVICE_URL = 'http://localhost:8002'
+ACCOUNT_SERVICE_URL = 'http://localhost:8003'
+TRANSACTION_SERVICE_URL = 'http://localhost:8004'
+PAYMENT_SERVICE_URL = 'http://localhost:8005'
+CARD_MANAGEMENT_SERVICE_URL = 'http://localhost:8006'
+LOAN_SERVICE_URL = 'http://localhost:8007'
+NOTIFICATION_SERVICE_URL = 'http://localhost:8008'
+AUDIT_SERVICE_URL = 'http://localhost:8009'
+FRAUD_DETECTION_SERVICE_URL = 'http://localhost:8010'
+SUPPORT_SERVICE_URL = 'http://localhost:8011'
+
+SERVICE_TOKEN = 'your_service_token_here'
+
+# Ensure logs directory exists
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR, exist_ok=True)
+
+ENV_NAME = os.getenv('ENV_NAME', 'development')
+
 
 # if not DEBUG:
 #     SECURE_SSL_REDIRECT = True

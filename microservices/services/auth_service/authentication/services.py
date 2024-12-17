@@ -31,7 +31,7 @@ class RegistrationService:
         """Handle user registration process"""
         try:
             # Create user with pending status
-            user = User.objects.create_user(
+            user = User(
                 username=data['username'],
                 email=data['email'],
                 password=data['password'],
@@ -43,6 +43,8 @@ class RegistrationService:
                 is_active=True,            # Langsung set True
                 is_email_verified=True     # Langsung set True
             )
+
+            user.set_password(data['password'])
 
             # Generate verification token
             verification_token = secrets.token_urlsafe(32)
@@ -59,7 +61,7 @@ class RegistrationService:
 
             # Notify other services
             user_data = {
-                'id': user.user_id,
+                'id': user.id,
                 'email': user.email,
                 'username': user.username,
                 'full_name': user.full_name,
@@ -70,10 +72,10 @@ class RegistrationService:
             # Produce Kafka event
             kafka_producer.produce(
                 topic=KafkaTopics.USER_EVENTS,
-                key=str(user.user_id),
+                key=str(user.id),
                 value={
                     "event_type": "USER_REGISTERED",
-                    "user_id": user.user_id,
+                    "user_id": user.id,
                     "email": user.email,
                     "timestamp": timezone.now().isoformat()
                 }
@@ -111,10 +113,10 @@ class RegistrationService:
             # Produce Kafka event
             kafka_producer.produce(
                 topic=KafkaTopics.USER_EVENTS,
-                key=str(user.user_id),
+                key=str(user.id),
                 value={
                     "event_type": "EMAIL_VERIFIED",
-                    "user_id": user.user_id,
+                    "user_id": user.id,
                     "email": user.email,
                     "timestamp": timezone.now().isoformat()
                 }
@@ -226,7 +228,7 @@ class AuthenticationService:
 
         # Cache session data
         session_data = {
-            'user_id': user.user_id,
+            'user_id': user.id,
             'access_token_jti': tokens['access_token_id'],
             'device_id': request_data.get('device_id'),
             'is_active': True
@@ -274,7 +276,7 @@ class AuthenticationService:
             user.save()
 
             ServiceNotifier.notify_security_event(
-                user_id=user.user_id,
+                user_id=user.id,
                 event_type='ACCOUNT_LOCKED',
                 details={'reason': 'Too many failed login attempts'}
             )
