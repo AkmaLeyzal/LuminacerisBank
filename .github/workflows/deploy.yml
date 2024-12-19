@@ -5,8 +5,8 @@ name: Deploy CI/CD
 on:
   push:
     branches:
-      # - main  # Ubah ke nama branch utama Anda jika berbeda
-      - pull-request
+      - main  # Ubah ke nama branch utama Anda jika berbeda
+      # - pull-request
 
 jobs:
   build-and-deploy:

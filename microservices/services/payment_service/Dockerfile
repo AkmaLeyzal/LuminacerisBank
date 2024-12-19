@@ -44,7 +44,8 @@ RUN pip install --upgrade pip && \
     ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 COPY --from=build /LuminacerisBank/microservices/services/payment_service /LuminacerisBank/microservices/services/payment_service
+COPY --from=build /LuminacerisBank/kafka_cloud /LuminacerisBank/kafka_cloud
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "payment_service.wsgi:application", "--workers", "3", "--timeout", "60"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8005", "payment_service.wsgi:application", "--workers", "3", "--timeout", "60"]

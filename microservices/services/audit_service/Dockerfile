@@ -42,7 +42,8 @@ RUN pip install --upgrade pip && \
     ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 COPY --from=build /LuminacerisBank/microservices/services/audit_service /LuminacerisBank/microservices/services/audit_service
+COPY --from=build /LuminacerisBank/kafka_cloud /LuminacerisBank/kafka_cloud
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "audit_service.wsgi:application", "--workers", "3", "--timeout", "60"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8009", "audit_service.wsgi:application", "--workers", "3", "--timeout", "60"]

@@ -44,7 +44,8 @@ RUN pip install --upgrade pip && \
     ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 COPY --from=build /LuminacerisBank/microservices/services/fraud_detection_service /LuminacerisBank/microservices/services/fraud_detection_service
+COPY --from=build /LuminacerisBank/kafka_cloud /LuminacerisBank/kafka_cloud
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "fraud_detection_service.wsgi:application", "--workers", "3", "--timeout", "60"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8010", "fraud_detection_service.wsgi:application", "--workers", "3", "--timeout", "60"]

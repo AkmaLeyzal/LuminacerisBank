@@ -216,21 +216,21 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8011",   # Support Service
     # Frontend origins
     "http://localhost:3000",   # React development
-    "http://localhost/login_page",
-    "http://localhost/home_page",
-    "http://localhost/cardManagement_page",
-    "http://localhost/fraudAlert_page",
-    "http://localhost/history_page",
-    "http://localhost/loan_page",
-    "http://localhost/notificationCenter_page",
-    "http://localhost/paymentService_page",
-    "http://localhost/profileSetting_page",
-    "http://localhost/support_page",
-    "http://localhost/transfer_page",
+    # "http://localhost/login_page",
+    # "http://localhost/home_page",
+    # "http://localhost/cardManagement_page",
+    # "http://localhost/fraudAlert_page",
+    # "http://localhost/history_page",
+    # "http://localhost/loan_page",
+    # "http://localhost/notificationCenter_page",
+    # "http://localhost/paymentService_page",
+    # "http://localhost/profileSetting_page",
+    # "http://localhost/support_page",
+    # "http://localhost/transfer_page",
 ]
 
 # Additional CORS settings
-# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -256,11 +256,16 @@ CORS_ALLOW_HEADERS = [
     'pragma'
 ]
 
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
+# Kafka Configuration
+KAFKA_BOOTSTRAP_SERVERS = os.getenv('CONFLUENT_BOOTSTRAP_SERVERS')
+KAFKA_SECURITY_PROTOCOL = "SASL_SSL"
+KAFKA_SASL_MECHANISMS = "PLAIN"
+KAFKA_SASL_USERNAME = os.getenv('CONFLUENT_SASL_USERNAME')
+KAFKA_SASL_PASSWORD = os.getenv('CONFLUENT_SASL_PASSWORD')
 
 # Internationalization settings
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jakarta'
 USE_I18N = True
 USE_TZ = True
 
@@ -273,19 +278,80 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Hapus konfigurasi LOGGING yang lama dan ganti dengan ini
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(name)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+            'level': 'DEBUG',
         },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'auth_service.log'),
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+            'level': 'INFO',
+        }
     },
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file'],
         'level': 'INFO',
     },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'authentication': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    }
 }
+
+# Service URLs
+AUTH_SERVICE_URL = 'http://localhost:8001'
+USER_MANAGEMENT_SERVICE_URL = 'http://localhost:8002'
+ACCOUNT_SERVICE_URL = 'http://localhost:8003'
+TRANSACTION_SERVICE_URL = 'http://localhost:8004'
+PAYMENT_SERVICE_URL = 'http://localhost:8005'
+CARD_MANAGEMENT_SERVICE_URL = 'http://localhost:8006'
+LOAN_SERVICE_URL = 'http://localhost:8007'
+NOTIFICATION_SERVICE_URL = 'http://localhost:8008'
+AUDIT_SERVICE_URL = 'http://localhost:8009'
+FRAUD_DETECTION_SERVICE_URL = 'http://localhost:8010'
+SUPPORT_SERVICE_URL = 'http://localhost:8011'
+
+# Ensure logs directory exists
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR, exist_ok=True)
+
+ENV_NAME = os.getenv('ENV_NAME', 'development')
 
 # if not DEBUG:
 #     SECURE_SSL_REDIRECT = True
