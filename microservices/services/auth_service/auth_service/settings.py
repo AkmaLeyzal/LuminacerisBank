@@ -18,7 +18,7 @@ if not os.getenv('DOCKER_CONTAINER'):
 SECRET_KEY = os.getenv('SECRET_KEY_AUTH_SERVICE', 'default_secret_key')
 
 # Service Authentication
-SERVICE_AUTH_KEY = os.getenv('SERVICE_AUTH_KEY', 'your-secure-service-key')
+SERVICE_AUTH_KEY = os.getenv('SERVICE_AUTH_KEY', 'LuminacerisBank_is_the_best_bank_ever')
 
 # Service Verification Settings
 VERIFICATION_REQUIREMENTS = {
@@ -114,19 +114,6 @@ AUTH_PASSWORD_VALIDATORS = [
 REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = 14028
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
-
-# import redis
-
-# r = redis.Redis(
-#   host=REDIS_HOST,
-#   port=14028,
-#   password=REDIS_PASSWORD)
-
-# try:
-#   r.ping()
-#   print("Successfully connected to Redis")
-# except redis.exceptions.ConnectionError as e:
-#   print(f"Failed to connect to Redis: {e}")
 
 CACHES = {
     "default": {

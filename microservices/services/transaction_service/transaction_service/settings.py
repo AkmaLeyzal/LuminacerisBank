@@ -1,10 +1,13 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import sys
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BASE_DIR.parent.parent.parent
+
+sys.path.append(str(ROOT_DIR))
 
 if not os.getenv('DOCKER_CONTAINER'):
     from dotenv import load_dotenv
@@ -13,9 +16,13 @@ if not os.getenv('DOCKER_CONTAINER'):
 # Secret key for Django, fetched from environment variables for security
 SECRET_KEY = os.getenv('SECRET_KEY_TRANSACTION_SERVICE', 'default_secret_key')
 
+# Service Authentication
+SERVICE_AUTH_KEY = os.getenv('SERVICE_AUTH_KEY', 'LuminacerisBank_is_the_best_bank_ever')
+
+
 # Debug mode
-DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
-# DEBUG = 'True'
+# DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+DEBUG = 'True'
 
 # Allowed hosts
 ALLOWED_HOSTS = ['*']
@@ -81,15 +88,21 @@ DATABASES = {
     }
 }
 
-# Add to settings.py:
-# Redis Transaction Settings
+# Transaction Service Settings
 TRANSACTION_SETTINGS = {
-    'DAILY_LIMIT': float('50000'),
-    'RATE_LIMIT_PER_MINUTE': 10,
+    'DAILY_LIMIT': float(os.getenv('TRANSACTION_DAILY_LIMIT', '50000')),
+    'RATE_LIMIT_PER_MINUTE': int(os.getenv('TRANSACTION_RATE_LIMIT', '10')),
+    'MAX_AMOUNT_PER_TRANSACTION': float(os.getenv('MAX_TRANSACTION_AMOUNT', '1000000000')),
+    'MIN_AMOUNT_PER_TRANSACTION': float(os.getenv('MIN_TRANSACTION_AMOUNT', '0.01')),
+    'FEE_SETTINGS': {
+        'BASE_FEE': float(os.getenv('TRANSACTION_BASE_FEE', '1.00')),
+        'PERCENTAGE_FEE': float(os.getenv('TRANSACTION_PERCENTAGE_FEE', '0.001'))  # 0.1%
+    },
     'CACHE_TIMEOUT': {
-        'TRANSACTION_STATUS': 3600,  # 1 hour
-        'ACCOUNT_BALANCE': 300,      # 5 minutes
-        'RATE_LIMIT': 60,           # 1 minute
+        'TRANSACTION_STATUS': 3600,    # 1 hour
+        'ACCOUNT_BALANCE': 300,        # 5 minutes
+        'RATE_LIMIT': 60,             # 1 minute
+        'DAILY_TOTAL': 86400          # 24 hours
     }
 }
 
@@ -101,7 +114,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+REDIS_HOST = os.getenv('REDIS_HOST')
 REDIS_PORT = 14028
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 
 CACHES = {
     "default": {
@@ -196,6 +211,17 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 100
 }
 
+REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = [
+    'rest_framework.throttling.AnonRateThrottle',
+    'rest_framework.throttling.UserRateThrottle'
+]
+
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+    'anon': '100/day',
+    'user': '1000/day',
+    'transaction': '10/minute'
+}
+
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:80",     # Nginx
     "http://localhost:8001",   # Auth Service
@@ -211,21 +237,21 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8011",   # Support Service
     # Frontend origins
     "http://localhost:3000",   # React development
-    "http://localhost/login_page",
-    "http://localhost/home_page",
-    "http://localhost/cardManagement_page",
-    "http://localhost/fraudAlert_page",
-    "http://localhost/history_page",
-    "http://localhost/loan_page",
-    "http://localhost/notificationCenter_page",
-    "http://localhost/paymentService_page",
-    "http://localhost/profileSetting_page",
-    "http://localhost/support_page",
-    "http://localhost/transfer_page",
+    # "http://localhost/login_page",
+    # "http://localhost/home_page",
+    # "http://localhost/cardManagement_page",
+    # "http://localhost/fraudAlert_page",
+    # "http://localhost/history_page",
+    # "http://localhost/loan_page",
+    # "http://localhost/notificationCenter_page",
+    # "http://localhost/paymentService_page",
+    # "http://localhost/profileSetting_page",
+    # "http://localhost/support_page",
+    # "http://localhost/transfer_page",
 ]
 
 # Additional CORS settings
-# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -251,11 +277,23 @@ CORS_ALLOW_HEADERS = [
     'pragma'
 ]
 
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:9092')
+KAFKA_SETTINGS = {
+    'BOOTSTRAP_SERVERS': os.getenv('CONFLUENT_BOOTSTRAP_SERVERS'),
+    'SECURITY_PROTOCOL': "SASL_SSL",
+    'SASL_MECHANISMS': "PLAIN",
+    'SASL_USERNAME': os.getenv('CONFLUENT_SASL_USERNAME'),
+    'SASL_PASSWORD': os.getenv('CONFLUENT_SASL_PASSWORD'),
+    'CLIENT_ID': os.getenv('CONFLUENT_CLIENT_ID'),
+    'TOPICS': {
+        'TRANSACTION_EVENTS': 'transaction-events',
+        'ACCOUNT_EVENTS': 'account-events',
+        'NOTIFICATION_EVENTS': 'notification-events'
+    }
+}
 
 # Internationalization settings
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Jakarta'
 USE_I18N = True
 USE_TZ = True
 
@@ -271,16 +309,47 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'transaction_service.log'),
+            'maxBytes': 1024 * 1024 * 5,  # 5 MB
+            'backupCount': 5,
+            'formatter': 'verbose',
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'transaction': {  # Add app-specific logger
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    }
 }
+
+# Ensure logs directory exists
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
 
 # if not DEBUG:
 #     SECURE_SSL_REDIRECT = True
