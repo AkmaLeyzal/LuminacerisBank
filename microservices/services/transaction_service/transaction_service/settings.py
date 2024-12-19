@@ -346,6 +346,26 @@ LOGGING = {
     }
 }
 
+# Service URLs
+AUTH_SERVICE_URL = 'http://localhost:8001'
+USER_MANAGEMENT_SERVICE_URL = 'http://localhost:8002'
+ACCOUNT_SERVICE_URL = 'http://localhost:8003'
+TRANSACTION_SERVICE_URL = 'http://localhost:8004'
+PAYMENT_SERVICE_URL = 'http://localhost:8005'
+CARD_MANAGEMENT_SERVICE_URL = 'http://localhost:8006'
+LOAN_SERVICE_URL = 'http://localhost:8007'
+NOTIFICATION_SERVICE_URL = 'http://localhost:8008'
+AUDIT_SERVICE_URL = 'http://localhost:8009'
+FRAUD_DETECTION_SERVICE_URL = 'http://localhost:8010'
+SUPPORT_SERVICE_URL = 'http://localhost:8011'
+
+# Ensure logs directory exists
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR, exist_ok=True)
+
+ENV_NAME = os.getenv('ENV_NAME', 'development')
+
 # Ensure logs directory exists
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 if not os.path.exists(LOGS_DIR):

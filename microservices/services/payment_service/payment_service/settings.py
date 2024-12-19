@@ -209,17 +209,17 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8011",   # Support Service
     # Frontend origins
     "http://localhost:3000",   # React development
-    "http://localhost/login_page",
-    "http://localhost/home_page",
-    "http://localhost/cardManagement_page",
-    "http://localhost/fraudAlert_page",
-    "http://localhost/history_page",
-    "http://localhost/loan_page",
-    "http://localhost/notificationCenter_page",
-    "http://localhost/paymentService_page",
-    "http://localhost/profileSetting_page",
-    "http://localhost/support_page",
-    "http://localhost/transfer_page",
+    # "http://localhost/login_page",
+    # "http://localhost/home_page",
+    # "http://localhost/cardManagement_page",
+    # "http://localhost/fraudAlert_page",
+    # "http://localhost/history_page",
+    # "http://localhost/loan_page",
+    # "http://localhost/notificationCenter_page",
+    # "http://localhost/paymentService_page",
+    # "http://localhost/profileSetting_page",
+    # "http://localhost/support_page",
+    # "http://localhost/transfer_page",
 ]
 
 # Additional CORS settings
