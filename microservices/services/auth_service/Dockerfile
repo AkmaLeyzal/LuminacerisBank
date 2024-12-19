@@ -20,7 +20,7 @@ RUN pip install --force-reinstall gunicorn
 RUN ln -s /usr/local/bin/gunicorn /usr/bin/gunicorn
 
 COPY . .
-COPY ../../../kafka_cloud /LuminacerisBank/kafka_cloud
+COPY kafka_cloud /LuminacerisBank/kafka_cloud
 
 RUN python manage.py collectstatic --noinput
 

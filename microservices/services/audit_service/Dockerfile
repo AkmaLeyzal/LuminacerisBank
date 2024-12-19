@@ -18,6 +18,7 @@ RUN pip install --upgrade pip && \
 RUN pip install --force-reinstall gunicorn
 
 COPY . .
+COPY kafka_cloud /LuminacerisBank/kafka_cloud
 
 FROM python:3.10.12-slim-bullseye
 
