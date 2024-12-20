@@ -2,6 +2,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 import sys
+from django.core.exceptions import ImproperlyConfigured
 
 # Base directory of the project
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,6 +15,8 @@ if not os.getenv('DOCKER_CONTAINER'):
     load_dotenv(os.path.join(ROOT_DIR, '.env'))
 
 SECRET_KEY = os.getenv('SECRET_KEY_ACCOUNT_SERVICE')
+if not SECRET_KEY:
+    raise ImproperlyConfigured("The SECRET_KEY setting must not be empty, TOLOL.")
 
 # Debug mode
 # DEBUG = os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
